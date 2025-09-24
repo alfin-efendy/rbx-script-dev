@@ -12,6 +12,9 @@ function FarmUtils:Init(core, playerUtils)
     end
     Core = core
     PlayerUtils = playerUtils
+    
+    -- Initialize MyFarm after Core is set
+    FarmUtils.MyFarm = FarmUtils:GetFarm(Core.LocalPlayer.Name)
 end
 
 function GetFarm(PlayerName: string): Folder?
@@ -28,8 +31,6 @@ function GetFarm(PlayerName: string): Folder?
 	end
     return
 end
-
-FarmUtils.MyFarm = FarmUtils:GetFarm(Core.LocalPlayer.Name)
 
 local function GetArea(Base: Part)
 	local Center = Base:GetPivot()
