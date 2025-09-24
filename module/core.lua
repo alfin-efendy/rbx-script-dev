@@ -7,9 +7,9 @@ Core.UserInputService = game:GetService("UserInputService")
 Core.GuiService = game:GetService("GuiService")
 Core.Workspace = game:GetService("Workspace")
 
-Core.LocalPlayer = Players.LocalPlayer
-Core.PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-Core.Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-Core.Backpack = LocalPlayer:WaitForChild("Backpack")
+Core.LocalPlayer = Core.Players.LocalPlayer
+Core.PlayerGui = Core.LocalPlayer:WaitForChild("PlayerGui")
+Core.Character = Core.LocalPlayer.Character or Core.LocalPlayer.CharacterAdded:Wait()
+Core.Backpack = Core.LocalPlayer:WaitForChild("Backpack")
 
 return Core
