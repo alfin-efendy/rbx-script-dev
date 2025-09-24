@@ -158,12 +158,12 @@ function UIComponents:CreateEggsSection(petTab)
         MultiSelect = false,
         Flag = "EggPlacing",
         OnInit = function(currentOptions, updateOptions, selectBoxAPI)
-            local OwnedEggs = PetUtils:GetEggsInventory()
+            local OwnedEggs = PetUtils:GetAllOwnedEggs()
             updateOptions(OwnedEggs)
         end,
         OnDropdownOpen = function(currentOptions, updateOptions)
             local currentOptionsSet = {}
-            local OwnedEggs = PetUtils:GetEggsInventory()
+            local OwnedEggs = PetUtils:GetAllOwnedEggs()
 
             print("Owned Eggs Found:")
             for _, egg in pairs(OwnedEggs) do
