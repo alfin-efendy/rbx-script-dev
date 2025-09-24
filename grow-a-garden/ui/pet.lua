@@ -200,7 +200,7 @@ function UIPet:CreateEggsSection(petTab)
         MultiSelect = false,
         Flag = "HatchPetTeam",
         OnDropdownOpen = function(currentOptions, updateOptions)
-            local listTeamPet = window:GetConfigValue("PetTeamConfig") and window:GetConfigValue("PetTeamConfig").GetAllKeys() or {}
+            local listTeamPet = PetUtils:GetAllPetTeams()
             local currentOptionsSet = {}
             
             for _, team in pairs(listTeamPet) do

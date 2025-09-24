@@ -1,0 +1,16 @@
+{
+  "name": "roblox-script-bundler",
+  "version": "1.0.0",
+  "description": "Bundle Roblox scripts with external loadstring dependencies",
+  "main": "bundler.js",
+  "scripts": {
+    "bundle": "node bundler.js",
+    "bundle-grow-garden": "node bundler.js ../grow-a-garden/script.lua ../grow-a-garden/bundled.lua"
+  },
+  "keywords": ["roblox", "bundler", "loadstring", "lua"],
+  "author": "Your Name",
+  "license": "MIT",
+  "bin": {
+    "rbx-bundle": "./bundler.js"
+  }
+}

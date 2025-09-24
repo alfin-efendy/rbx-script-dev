@@ -109,6 +109,11 @@ function PetUtils:GetAllOwnedPets()
         end
     end
 
+    -- Sort pets alphabetically (ascending order)
+    table.sort(myPets, function(a, b)
+        return string.lower(a.text) < string.lower(b.text)
+    end)
+
     return myPets
 end
 
@@ -158,13 +163,62 @@ function PetUtils:GetPetDetail(petUUID)
     end
 end
 
-function GetPetRegistry()
+function PetUtils:GetPetRegistry()
     local success, petRegistry = pcall(function()
-        return require(ReplicatedStorage.Data.PetRegistry)
+        return require(GameServices.ReplicatedStorage.Data.PetRegistry)
     end)
     
     if success then
-        return petRegistry.PetList
+        print("PetUtils:GetPetRegistry - Successfully loaded PetRegistry module")
+        
+        -- Debug: Print structure of petRegistry
+        print("PetRegistry keys:")
+        for key, value in pairs(petRegistry) do
+            print("  Key:", key, "Type:", type(value))
+        end
+        
+        local petList = petRegistry.PetList
+        print("PetUtils:GetPetRegistry - PetList type:", type(petList))
+        
+        if petList then
+            print("PetUtils:GetPetRegistry - PetList length/pairs count:")
+            local count = 0
+            for k, v in pairs(petList) do
+                count = count + 1
+                print("  Pet:", k, "Data type:", type(v))
+                if count <= 3 then -- Only show first 3 pets to avoid spam
+                    print("    Sample data:", v)
+                end
+            end
+            print("PetUtils:GetPetRegistry - Total pets found:", count)
+            
+            -- Convert PetList to UI format {text = ..., value = ...}
+            local formattedPets = {}
+            for petName, petData in pairs(petList) do
+                table.insert(formattedPets, {
+                    text = petName,
+                    value = petName
+                })
+            end
+            
+            -- Sort pets alphabetically (ascending order)
+            table.sort(formattedPets, function(a, b)
+                return string.lower(a.text) < string.lower(b.text)
+            end)
+            
+            print("PetUtils:GetPetRegistry - Formatted", #formattedPets, "pets for UI (sorted ascending)")
+            
+            -- Debug: Print first few sorted pets
+            print("First 5 sorted pets:")
+            for i = 1, math.min(5, #formattedPets) do
+                print("  " .. i .. ":", formattedPets[i].text)
+            end
+            
+            return formattedPets
+        else
+            warn("PetUtils:GetPetRegistry - PetList is nil or not found")
+            return {}
+        end
     else
         warn("Failed to get pet registry:", petRegistry)
         return {}
@@ -182,6 +236,11 @@ function PetUtils:GetAllOwnedEggs()
             table.insert(myEggs, {text = Tool.Name, value = Tool.Name})
         end
     end
+
+    -- Sort eggs alphabetically (ascending order)
+    table.sort(myEggs, function(a, b)
+        return string.lower(a.text) < string.lower(b.text)
+    end)
 
     return myEggs
 end
