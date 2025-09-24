@@ -8,6 +8,12 @@ function Player:Init(core)
         error("Player:Init - Core module is required")
     end
     Core = core
+
+    Core.LocalPlayer.Idled:Connect(function()
+        Core.VirtualUser:CaptureController()
+        Core.VirtualUser:ClickButton2(Vector2.new())
+        print("Anti-AFK: Clicked to prevent idle kick")
+    end)
 end
 
 function Player:EquipTool(Tool)

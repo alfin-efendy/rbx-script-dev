@@ -7,6 +7,7 @@ Core.TeleportService = game:GetService("TeleportService")
 Core.UserInputService = game:GetService("UserInputService")
 Core.GuiService = game:GetService("GuiService")
 Core.Workspace = game:GetService("Workspace")
+Core.VirtualUser = game:GetService("VirtualUser")
 
 -- Player reference
 Core.LocalPlayer = Core.Players.LocalPlayer
