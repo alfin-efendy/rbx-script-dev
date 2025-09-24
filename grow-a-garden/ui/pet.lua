@@ -1,18 +1,18 @@
 -- UI Components Module
-local UIComponents = {}
+local UIPet = {}
 local window
 local PetUtils
 local FarmUtils
 local EzUI
 
-function UIComponents:Init(windowInstance, petUtils, farmUtils, ezui)
+function UIPet:Init(windowInstance, petUtils, farmUtils, ezui)
     window = windowInstance
     PetUtils = petUtils
     FarmUtils = farmUtils
     EzUI = ezui
 end
 
-function UIComponents:CreatePetTab()
+function UIPet:CreatePetTab()
     local petTab = window:AddTab({
         Name = "Pets",
         Icon = "🐾",
@@ -22,9 +22,7 @@ function UIComponents:CreatePetTab()
     self:CreateEggsSection(petTab)
 end
 
-function UIComponents:CreatePetTeamsSection(petTab)
-    local petTeamConfig = EzUI.NewConfig("PetTeamConfig")
-
+function UIPet:CreatePetTeamsSection(petTab)
     local accordionPetTeams = petTab:AddAccordion({
         Title = "Pet Teams",
         Icon = "💪",
@@ -43,27 +41,8 @@ function UIComponents:CreatePetTeamsSection(petTab)
         local teamName = petTeamName.GetText()
         if teamName and teamName ~= "" then
             print("Creating pet team:", teamName)
-            local activePets = PetUtils:GetActivePets(game.Players.LocalPlayer.Name)
-           
-            if activePets then
-                local listActivePets = {}
-                for petUUID, petState in pairs(activePets) do
-                    print("Adding Active Pet to Team:", petUUID)
-                    table.insert(listActivePets, petUUID)
-                end
-
-                petTeamConfig.SetValue(teamName, listActivePets)
-                petTeamName.Clear()
-
-                local listTeamPet = petTeamConfig.GetAllKeys()
-                print("=== SAVED PET TEAMS ===")
-                for _, team in pairs(listTeamPet) do
-                    local petsInTeam = petTeamConfig.GetValue(team)
-                    print("Team:", team, "Pets:", table.concat(petsInTeam, ", "))
-                end
-            else
-                print("No active pets found to add to team.")
-            end
+            PetUtils:SaveTeamPets(teamName)
+            petTeamName.Clear()
         else
             print("Please enter a valid team name.")
         end
@@ -75,11 +54,11 @@ function UIComponents:CreatePetTeamsSection(petTab)
     
     local selectTeam = accordionPetTeams:AddSelectBox({
         Name = "Select Pet Team",
-        Options = petTeamConfig.GetAllKeys(),
+        Options = PetUtils:GetAllPetTeams(),
         Placeholder = "Select Pet Team...",
         MultiSelect = false,
         OnDropdownOpen = function(currentOptions, updateOptions)
-            local listTeamPet = petTeamConfig.GetAllKeys()
+            local listTeamPet = PetUtils:GetAllPetTeams()
             local currentOptionsSet = {}
             
             for _, team in pairs(listTeamPet) do
@@ -134,7 +113,7 @@ function UIComponents:CreatePetTeamsSection(petTab)
         local selectedTeam = selectTeam.GetSelected()
         if selectedTeam and #selectedTeam > 0 then
             local teamName = selectedTeam[1]
-            petTeamConfig.DeleteKey(teamName)
+            PetUtils:DeleteTeamPets(teamName)
             selectTeam.Clear()
         else
             print("Please select a team to delete.")
@@ -142,7 +121,7 @@ function UIComponents:CreatePetTeamsSection(petTab)
     end)
 end
 
-function UIComponents:CreateEggsSection(petTab)
+function UIPet:CreateEggsSection(petTab)
     local accordionEggs = petTab:AddAccordion({
         Title = "Eggs",
         Icon = "🥚",
@@ -217,4 +196,4 @@ function UIComponents:CreateEggsSection(petTab)
     end)
 end
 
-return UIComponents
+return UIPet
