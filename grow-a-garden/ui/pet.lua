@@ -237,11 +237,11 @@ function UIPet:CreateEggsSection(petTab)
     --     Flag = "WeightThresholdSpecialHatching",
     -- })
 
-    -- accordionEggs:AddToggle({
-    --     Name = "Auto Hatch Eggs",
-    --     Default = false,
-    --     Flag = "AutoHatchEggs",
-    -- })
+    accordionEggs:AddToggle({
+        Name = "Auto Hatch Eggs",
+        Default = false,
+        Flag = "AutoHatchEggs",
+    })
 
     accordionEggs:AddButton("Hatch All Ready Eggs", function()
         PetUtils:HatchEgg()
