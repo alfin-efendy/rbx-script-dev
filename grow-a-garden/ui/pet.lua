@@ -3,12 +3,13 @@ local UIComponents = {}
 local window
 local PetUtils
 local FarmUtils
-local EzUI = loadstring(game:HttpGet('https://raw.githubusercontent.com/alfin-efendy/ez-rbx-ui/refs/heads/main/ui.lua'))()
+local EzUI
 
-function UIComponents:Init(windowInstance, petUtils, farmUtils)
+function UIComponents:Init(windowInstance, petUtils, farmUtils, ezui)
     window = windowInstance
     PetUtils = petUtils
     FarmUtils = farmUtils
+    EzUI = ezui
 end
 
 function UIComponents:CreatePetTab()

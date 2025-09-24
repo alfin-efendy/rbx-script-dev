@@ -3,6 +3,17 @@ local FarmUtils = {}
 local Core
 local PlayerUtils
 
+function FarmUtils:Init(core, playerUtils)
+    if not core then
+        error("FarmUtils:Init - Core module is required")
+    end
+    if not playerUtils then
+        error("FarmUtils:Init - PlayerUtils module is required")
+    end
+    Core = core
+    PlayerUtils = playerUtils
+end
+
 function GetFarm(PlayerName: string): Folder?
 	local Farms = Core.Workspace.Farm:GetChildren()
 

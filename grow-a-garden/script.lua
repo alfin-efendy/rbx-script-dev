@@ -5,9 +5,9 @@ local EzUI = loadstring(game:HttpGet('https://raw.githubusercontent.com/alfin-ef
 -- Load Core module with error handling
 local Core = loadstring(game:HttpGet('https://raw.githubusercontent.com/alfin-efendy/rbx-script-dev/refs/heads/main/module/core.lua'))()
 local PlayerUtils = loadstring(game:HttpGet('https://raw.githubusercontent.com/alfin-efendy/rbx-script-dev/refs/heads/main/module/player.lua'))()
-local FarmUtils = loadstring(game:HttpGet('https://raw.githubusercontent.com/alfin-efendy/rbx-script-dev/grow-a-garden/refs/heads/main/grow-a-garden/module/farm.lua'))()
-local PetUtils = loadstring(game:HttpGet('https://raw.githubusercontent.com/alfin-efendy/rbx-script-dev/grow-a-garden/refs/heads/main/grow-a-garden/module/pet.lua'))()
-local PetUI = loadstring(game:HttpGet('https://raw.githubusercontent.com/alfin-efendy/rbx-script-dev/grow-a-garden/refs/heads/main/grow-a-garden/ui/pet.lua'))()
+local FarmUtils = loadstring(game:HttpGet('https://raw.githubusercontent.com/alfin-efendy/rbx-script-dev/refs/heads/main/grow-a-garden/module/farm.lua'))()
+local PetUtils = loadstring(game:HttpGet('https://raw.githubusercontent.com/alfin-efendy/rbx-script-dev/refs/heads/main/grow-a-garden/module/pet.lua'))()
+local PetUI = loadstring(game:HttpGet('https://raw.githubusercontent.com/alfin-efendy/rbx-script-dev/refs/heads/main/grow-a-garden/ui/pet.lua'))()
 
 -- Initialize window
 local window = EzUI.CreateWindow({
@@ -30,7 +30,7 @@ local window = EzUI.CreateWindow({
 PlayerUtils:Init(Core)
 FarmUtils:Init(Core, PlayerUtils)
 PetUtils:Init(Core, PlayerUtils, FarmUtils)
-PetUI:Init(window, PetUtils, FarmUtils)
+PetUI:Init(window, PetUtils, FarmUtils, EzUI)
 
 -- Create UI
 PetUI:CreatePetTab()
