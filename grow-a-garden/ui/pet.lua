@@ -1,18 +1,18 @@
 -- UI Components Module
-local UIPet = {}
+local UIComponents = {}
 local window
 local PetUtils
 local FarmUtils
 local EzUI
 
-function UIPet:Init(windowInstance, petUtils, farmUtils, ezui)
+function UIComponents:Init(windowInstance, petUtils, farmUtils, ezui)
     window = windowInstance
     PetUtils = petUtils
     FarmUtils = farmUtils
     EzUI = ezui
 end
 
-function UIPet:CreatePetTab()
+function UIComponents:CreatePetTab()
     local petTab = window:AddTab({
         Name = "Pets",
         Icon = "🐾",
@@ -22,7 +22,8 @@ function UIPet:CreatePetTab()
     self:CreateEggsSection(petTab)
 end
 
-function UIPet:CreatePetTeamsSection(petTab)
+function UIComponents:CreatePetTeamsSection(petTab)
+    local petTeamConfig = EzUI.NewConfig("PetTeamConfig")
 
     local accordionPetTeams = petTab:AddAccordion({
         Title = "Pet Teams",
@@ -42,8 +43,27 @@ function UIPet:CreatePetTeamsSection(petTab)
         local teamName = petTeamName.GetText()
         if teamName and teamName ~= "" then
             print("Creating pet team:", teamName)
-            PetUtils:SaveTeamPets(teamName)
-            petTeamName.Clear()
+            local activePets = PetUtils:GetActivePets(game.Players.LocalPlayer.Name)
+           
+            if activePets then
+                local listActivePets = {}
+                for petUUID, petState in pairs(activePets) do
+                    print("Adding Active Pet to Team:", petUUID)
+                    table.insert(listActivePets, petUUID)
+                end
+
+                petTeamConfig.SetValue(teamName, listActivePets)
+                petTeamName.Clear()
+
+                local listTeamPet = petTeamConfig.GetAllKeys()
+                print("=== SAVED PET TEAMS ===")
+                for _, team in pairs(listTeamPet) do
+                    local petsInTeam = petTeamConfig.GetValue(team)
+                    print("Team:", team, "Pets:", table.concat(petsInTeam, ", "))
+                end
+            else
+                print("No active pets found to add to team.")
+            end
         else
             print("Please enter a valid team name.")
         end
@@ -55,11 +75,11 @@ function UIPet:CreatePetTeamsSection(petTab)
     
     local selectTeam = accordionPetTeams:AddSelectBox({
         Name = "Select Pet Team",
-        Options = PetUtils:GetAllPetTeams(),
+        Options = petTeamConfig.GetAllKeys(),
         Placeholder = "Select Pet Team...",
         MultiSelect = false,
         OnDropdownOpen = function(currentOptions, updateOptions)
-            local listTeamPet = PetUtils:GetAllPetTeams()
+            local listTeamPet = petTeamConfig.GetAllKeys()
             local currentOptionsSet = {}
             
             for _, team in pairs(listTeamPet) do
@@ -114,7 +134,7 @@ function UIPet:CreatePetTeamsSection(petTab)
         local selectedTeam = selectTeam.GetSelected()
         if selectedTeam and #selectedTeam > 0 then
             local teamName = selectedTeam[1]
-            PetUtils:DeleteTeamPets(teamName)
+            petTeamConfig.DeleteKey(teamName)
             selectTeam.Clear()
         else
             print("Please select a team to delete.")
@@ -122,7 +142,7 @@ function UIPet:CreatePetTeamsSection(petTab)
     end)
 end
 
-function UIPet:CreateEggsSection(petTab)
+function UIComponents:CreateEggsSection(petTab)
     local accordionEggs = petTab:AddAccordion({
         Title = "Eggs",
         Icon = "🥚",
@@ -138,12 +158,12 @@ function UIPet:CreateEggsSection(petTab)
         MultiSelect = false,
         Flag = "EggPlacing",
         OnInit = function(currentOptions, updateOptions, selectBoxAPI)
-            local OwnedEggs = PetUtils:GetAllOwnedEggs()
+            local OwnedEggs = PetUtils:GetEggsInventory()
             updateOptions(OwnedEggs)
         end,
         OnDropdownOpen = function(currentOptions, updateOptions)
             local currentOptionsSet = {}
-            local OwnedEggs = PetUtils:GetAllOwnedEggs()
+            local OwnedEggs = PetUtils:GetEggsInventory()
 
             print("Owned Eggs Found:")
             for _, egg in pairs(OwnedEggs) do
@@ -167,6 +187,12 @@ function UIPet:CreateEggsSection(petTab)
         Flag = "MaxPlaceEggs",
     })
 
+    accordionEggs:AddButton("Teleport to Back Corner", function()
+        local backCorner = FarmUtils:GetBackCornerFarmPoint()
+        print("Teleporting to back corner of farm at:", backCorner)
+        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(backCorner)
+    end)
+
     accordionEggs:AddButton("Place Egg", function()
         local selectedEgg = eggSelect.GetSelected()
         local maxEggs = maxPlaceEggs.GetValue()
@@ -186,61 +212,9 @@ function UIPet:CreateEggsSection(petTab)
 
     accordionEggs:AddSeparator()
 
-    accordionEggs:AddLabel("Team for Hatching Eggs")
-
-    local selectTeamForHatch = accordionEggs:AddSelectBox({
-        Name = "Select Pet Team for Hatch",
-        Options = {"Loading..."},
-        Placeholder = "Select Pet Team...",
-        MultiSelect = false,
-        Flag = "HatchPetTeam",
-        OnDropdownOpen = function(currentOptions, updateOptions)
-            local listTeamPet = window:GetConfigValue("PetTeamConfig") and window:GetConfigValue("PetTeamConfig").GetAllKeys() or {}
-            local currentOptionsSet = {}
-            
-            for _, team in pairs(listTeamPet) do
-                table.insert(currentOptionsSet, {text = team, value = team})
-            end
-                    
-            updateOptions(currentOptionsSet)
-        end
-    })
-
-    accordionEggs:AddSeparator()
-
-    local accordionEggs:AddLabel("Select Hatching Special Pet")
-    local selectSpecialPet = accordionEggs:AddSelectBox({
-        Name = "Select Special Pet",
-        Options = {"Loading..."},
-        Placeholder = "Select Special Pet...",
-        MultiSelect = false,
-        Flag = "SpecialHatchingPet",
-        OnInit = function(currentOptions, updateOptions, selectBoxAPI)
-            local specialPets = PetUtils:GetPetRegistry()
-            updateOptions(specialPets)
-        end
-    })
-    local accordionEggs:AddLabel("Or If Weight is Higher Than")
-    local weightThresholdSpecialHatchingInput = accordionEggs:AddNumberBox({
-        Name = "Weight Threshold",
-        Placeholder = "Enter weight...",
-        Default = 0,
-        Min = 0,
-        Max = 20,
-        Increment = 1,
-        Decimals = 2,
-        Flag = "WeightThresholdSpecialHatching",
-    })
-
-    accordionEggs:AddToggle({
-        Name = "Auto Hatch Eggs",
-        Default = false,
-        Flag = "AutoHatchEggs",
-    })
-
     accordionEggs:AddButton("Hatch All Ready Eggs", function()
         PetUtils:HatchEgg()
     end)
 end
 
-return UIPet
+return UIComponents
