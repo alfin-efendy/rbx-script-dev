@@ -2,14 +2,12 @@ local Player = {}
 
 -- Load Core module with error handling
 local Core
-local success, result = pcall(function()
-    return require(script.Parent.core)
-end)
 
-if not success then
-    Core = loadstring(game:HttpGet('https://raw.githubusercontent.com/alfin-efendy/rbx-script-dev/refs/heads/main/module/core.lua'))()
-else
-    Core = result
+function Player:Init(core)
+    if not core then
+        error("Player:Init - Core module is required")
+    end
+    Core = core
 end
 
 function Player:EquipTool(Tool)

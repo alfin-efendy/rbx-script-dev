@@ -1,17 +1,9 @@
-local Farm = {}
+local FarmUtils = {}
 -- Load Core module with error handling
 local Core
-local success, result = pcall(function()
-    return require(script.Parent.core)
-end)
+local PlayerUtils
 
-if not success then
-    Core = loadstring(game:HttpGet('https://raw.githubusercontent.com/alfin-efendy/rbx-script-dev/refs/heads/main/module/core.lua'))()
-else
-    Core = result
-end
-
-local function GetFarm(PlayerName: string): Folder?
+function GetFarm(PlayerName: string): Folder?
 	local Farms = Core.Workspace.Farm:GetChildren()
 
 	for _, Farm in next, Farms do
@@ -26,7 +18,7 @@ local function GetFarm(PlayerName: string): Folder?
     return
 end
 
-local MyFarm = GetFarm(Core.LocalPlayer.Name)
+FarmUtils.MyFarm = FarmUtils:GetFarm(Core.LocalPlayer.Name)
 
 local function GetArea(Base: Part)
 	local Center = Base:GetPivot()
@@ -45,7 +37,7 @@ end
 
 -- Get center CFrame point of the farm
 local function GetFarmCenterCFrame()    
-    local important = MyFarm:FindFirstChild("Important")
+    local important = FarmUtils.MyFarm:FindFirstChild("Important")
     if not important then
         warn("Important folder not found in farm")
         return nil
@@ -160,9 +152,4 @@ local function GetBackCornerFarmPoint()
     return centerCFrame and centerCFrame.Position or Vector3.new(0, 4, 0)
 end
 
-return {
-    GetFarm = GetFarm,
-    GetRandomFarmPoint = GetRandomFarmPoint,
-    GetBackCornerFarmPoint = GetBackCornerFarmPoint,
-    GetFarmCenterCFrame = GetFarmCenterCFrame,
-}
+return FarmUtils
