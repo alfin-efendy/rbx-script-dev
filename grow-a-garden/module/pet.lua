@@ -50,7 +50,7 @@ end
 function PetUtils:GetEggsInventory()
     local myEggs = {}
 
-    for _, Tool in next, GameServices.Backpack:GetChildren() do
+    for _, Tool in next, PlayerUtils:GetAllTools() do
         local toolType = Tool:GetAttribute("b")
         toolType = toolType and string.lower(toolType) or ""
         if toolType == "c" then
