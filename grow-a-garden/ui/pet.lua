@@ -191,6 +191,58 @@ function UIPet:CreateEggsSection(petTab)
 
     accordionEggs:AddSeparator()
 
+    accordionEggs:AddLabel("Team for Hatching Eggs")
+
+    local selectTeamForHatch = accordionEggs:AddSelectBox({
+        Name = "Select Pet Team for Hatch",
+        Options = {"Loading..."},
+        Placeholder = "Select Pet Team...",
+        MultiSelect = false,
+        Flag = "HatchPetTeam",
+        OnDropdownOpen = function(currentOptions, updateOptions)
+            local listTeamPet = window:GetConfigValue("PetTeamConfig") and window:GetConfigValue("PetTeamConfig").GetAllKeys() or {}
+            local currentOptionsSet = {}
+            
+            for _, team in pairs(listTeamPet) do
+                table.insert(currentOptionsSet, {text = team, value = team})
+            end
+                    
+            updateOptions(currentOptionsSet)
+        end
+    })
+
+    accordionEggs:AddSeparator()
+
+    local accordionEggs:AddLabel("Select Hatching Special Pet")
+    local selectSpecialPet = accordionEggs:AddSelectBox({
+        Name = "Select Special Pet",
+        Options = {"Loading..."},
+        Placeholder = "Select Special Pet...",
+        MultiSelect = false,
+        Flag = "SpecialHatchingPet",
+        OnInit = function(currentOptions, updateOptions, selectBoxAPI)
+            local specialPets = PetUtils:GetPetRegistry()
+            updateOptions(specialPets)
+        end
+    })
+    local accordionEggs:AddLabel("Or If Weight is Higher Than")
+    local weightThresholdSpecialHatchingInput = accordionEggs:AddNumberBox({
+        Name = "Weight Threshold",
+        Placeholder = "Enter weight...",
+        Default = 0,
+        Min = 0,
+        Max = 20,
+        Increment = 1,
+        Decimals = 2,
+        Flag = "WeightThresholdSpecialHatching",
+    })
+
+    accordionEggs:AddToggle({
+        Name = "Auto Hatch Eggs",
+        Default = false,
+        Flag = "AutoHatchEggs",
+    })
+
     accordionEggs:AddButton("Hatch All Ready Eggs", function()
         PetUtils:HatchEgg()
     end)
