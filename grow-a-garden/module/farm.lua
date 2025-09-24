@@ -131,7 +131,7 @@ function FarmUtils:GetRandomFarmPoint()
     end
     
     -- Fallback to center point
-    local centerCFrame = GetFarmCenterCFrame()
+    local centerCFrame = FarmUtils:GetFarmCenterCFrame()
     return centerCFrame and centerCFrame.Position or Vector3.new(0, 4, 0)
 end
 
@@ -160,7 +160,7 @@ function FarmUtils:GetBackCornerFarmPoint()
     end
     
     -- Fallback to center point
-    local centerCFrame = GetFarmCenterCFrame()
+    local centerCFrame = FarmUtils:GetFarmCenterCFrame()
     return centerCFrame and centerCFrame.Position or Vector3.new(0, 4, 0)
 end
 
