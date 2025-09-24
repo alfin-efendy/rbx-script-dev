@@ -3,21 +3,6 @@ local FarmUtils = {}
 local Core
 local PlayerUtils
 
-function GetFarm(PlayerName: string): Folder?
-	local Farms = Core.Workspace.Farm:GetChildren()
-
-	for _, Farm in next, Farms do
-    local Important = Farm.Important
-    local Data = Important.Data
-    local Owner = Data.Owner
-
-		if Owner.Value == PlayerName then
-			return Farm
-		end
-	end
-    return
-end
-
 function FarmUtils:Init(core, playerUtils)
     if not core then
         error("FarmUtils:Init - Core module is required")
@@ -32,7 +17,22 @@ function FarmUtils:Init(core, playerUtils)
     FarmUtils.MyFarm = FarmUtils:GetFarm(Core.LocalPlayer.Name)
 end
 
-local function GetArea(Base: Part)
+function FarmUtils:GetFarm(PlayerName: string): Folder?
+	local Farms = Core.Workspace.Farm:GetChildren()
+
+	for _, Farm in next, Farms do
+    local Important = Farm.Important
+    local Data = Important.Data
+    local Owner = Data.Owner
+
+		if Owner.Value == PlayerName then
+			return Farm
+		end
+	end
+    return
+end
+
+function FarmUtils:GetArea(Base: Part)
 	local Center = Base:GetPivot()
 	local Size = Base.Size
 
@@ -48,7 +48,7 @@ local function GetArea(Base: Part)
 end
 
 -- Get center CFrame point of the farm
-local function GetFarmCenterCFrame()    
+function FarmUtils:GetFarmCenterCFrame()    
     local important = FarmUtils.MyFarm:FindFirstChild("Important")
     if not important then
         warn("Important folder not found in farm")
@@ -104,7 +104,7 @@ local function GetFarmCenterCFrame()
 end
 
 -- Get random point within farm boundaries
-local function GetRandomFarmPoint()
+function FarmUtils:GetRandomFarmPoint()
     local farm = GetFarm(Core.LocalPlayer.Name)
     if not farm then
         return Vector3.new(0, 4, 0)
@@ -135,7 +135,7 @@ local function GetRandomFarmPoint()
     return centerCFrame and centerCFrame.Position or Vector3.new(0, 4, 0)
 end
 
-local function GetBackCornerFarmPoint()
+function FarmUtils:GetBackCornerFarmPoint()
     local farm = GetFarm(Core.LocalPlayer.Name)
     if not farm then
         return Vector3.new(0, 4, 0)
