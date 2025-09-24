@@ -225,17 +225,17 @@ function UIPet:CreateEggsSection(petTab)
     --         updateOptions(specialPets)
     --     end
     -- })
-    -- local accordionEggs:AddLabel("Or If Weight is Higher Than")
-    -- local weightThresholdSpecialHatchingInput = accordionEggs:AddNumberBox({
-    --     Name = "Weight Threshold",
-    --     Placeholder = "Enter weight...",
-    --     Default = 0,
-    --     Min = 0,
-    --     Max = 20,
-    --     Increment = 1,
-    --     Decimals = 2,
-    --     Flag = "WeightThresholdSpecialHatching",
-    -- })
+    local accordionEggs:AddLabel("Or If Weight is Higher Than")
+    local weightThresholdSpecialHatchingInput = accordionEggs:AddNumberBox({
+        Name = "Weight Threshold",
+        Placeholder = "Enter weight...",
+        Default = 0.0,
+        Min = 0.0,
+        Max = 20.0,
+        Increment = 1.0,
+        Decimals = 2,
+        Flag = "WeightThresholdSpecialHatching",
+    })
 
     accordionEggs:AddToggle({
         Name = "Auto Hatch Eggs",
