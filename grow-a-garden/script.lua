@@ -29,7 +29,7 @@ local window = EzUI.CreateWindow({
 -- Initialize modules with dependencies
 PlayerUtils:Init(Core)
 FarmUtils:Init(Core, PlayerUtils)
-PetUtils:Init(Core, PlayerUtils, FarmUtils)
+PetUtils:Init(Core, PlayerUtils, FarmUtils, EzUI.NewConfig("PetTeamConfig"))
 PetUI:Init(window, PetUtils, FarmUtils, EzUI)
 
 -- Create UI

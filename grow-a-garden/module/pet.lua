@@ -3,11 +3,13 @@ local PetUtils = {}
 local GameServices
 local PlayerUtils
 local FarmUtils
+local PetTeamConfig
 
-function PetUtils:Init(gameServices, playerUtils, farmUtils)
+function PetUtils:Init(gameServices, playerUtils, farmUtils, petTeamConfig)
     GameServices = gameServices
     PlayerUtils = playerUtils
     FarmUtils = farmUtils
+    PetTeamConfig = petTeamConfig
 end
 
 function PetUtils:GetPetReplicationData()
@@ -17,7 +19,8 @@ function PetUtils:GetPetReplicationData()
     return ActivePetsReplicator:YieldUntilData().Table
 end
 
-function PetUtils:GetActivePets(playerName)
+-- =========== Pets ==========
+function PetUtils:GetAllActivePets()
     local success, replicationData = pcall(function()
         return self:GetPetReplicationData()
     end)
@@ -28,7 +31,7 @@ function PetUtils:GetActivePets(playerName)
     end
     
     local activePetStates = replicationData.ActivePetStates
-    local playerPets = activePetStates[playerName] or activePetStates[tonumber(playerName)]
+    local playerPets = activePetStates[GameServices.LocalPlayer.Name] or activePetStates[tonumber(playerName)]
     return playerPets
 end
 
@@ -47,7 +50,129 @@ function PetUtils:UnequipPet(PetID)
     )
 end
 
-function PetUtils:GetEggsInventory()
+function PetUtils:SaveTeamPets(teamName)
+    local activePets = self:GetAllActivePets()
+
+    if not activePets then
+        print("No active pets found.")
+        return
+    end
+
+    local listActivePets = {}
+    for petUUID, petState in pairs(activePets) do
+        table.insert(listActivePets, petUUID)
+    end
+
+    PetTeamConfig.SetValue(teamName, listActivePets)
+end
+
+function PetUtils:GetAllPetTeams()
+    return PetTeamConfig.GetAllKeys()
+end
+
+function PetUtils:DeleteTeamPets(teamName)
+    PetTeamConfig.DeleteKey(teamName)
+end
+
+function PetUtils:ChangeToTeamPets(teamName)
+    local petsInTeam = PetTeamConfig.GetValue(teamName)
+
+    if not petsInTeam then
+        print("No pets found in the team:", teamName)
+        return
+    end
+
+    -- Deactivate all current active pets
+    local activePets = self:GetAllActivePets(GameServices.LocalPlayer.Name)
+    if activePets then
+        for petUUID, _ in pairs(activePets) do
+            print("Deactivating Active Pet:", petUUID)
+            self:UnequipPet(petUUID)
+        end
+    end
+
+    -- Activate pets in the selected team
+    for _, petUUID in pairs(petsInTeam) do
+        print("Activating Pet from Team:", petUUID)
+        self:EquipPet(petUUID)
+    end
+end
+
+function PetUtils:GetAllOwnedPets()
+    local myPets = {}
+    
+    for _, Tool in next, PlayerUtils:GetAllTools() do
+        local toolType = Tool:GetAttribute("b")
+        toolType = toolType and string.lower(toolType) or ""
+        if toolType == "l" then
+            table.insert(myPets, {text = Tool.Name, value = Tool.Name})
+        end
+    end
+
+    return myPets
+end
+
+function PetUtils:GetPetDetail(petUUID)
+    local success, result = pcall(function()
+        local dataService = require(GameServices.ReplicatedStorage.Modules.DataService)
+        local allData = dataService:GetData()
+        
+        if not allData then
+            warn("No data available from DataService")
+            return nil
+        end
+        
+        local saveSlots = allData.SaveSlots
+        if not saveSlots then
+            warn("SaveSlots not found in data")
+            return nil
+        end
+        
+        local savedObjects = saveSlots.AllSlots[saveSlots.SelectedSlot].SavedObjects
+        
+        if savedObjects and petUUID and savedObjects[petUUID] then
+            return savedObjects[petUUID].Data
+        end
+        
+        -- Fallback method
+        warn("Falling back to ReplicationClass method")
+        local ReplicationClass = require(GameServices.ReplicatedStorage.Modules.ReplicationClass)
+        local DataStreamReplicator = ReplicationClass.new("DataStreamReplicator")
+        DataStreamReplicator:YieldUntilData()
+        
+        local replicationData = DataStreamReplicator:YieldUntilData().Table
+        local playerData = replicationData[GameServices.LocalPlayer.Name] or replicationData[tostring(GameServices.LocalPlayer.UserId)]
+        
+        if playerData and playerData[petUUID] then
+            return playerData[petUUID].Data
+        end
+        
+        return nil
+    end)
+    
+    if success then
+        return result
+    else
+        warn("Failed to get pet data:", result)
+        return nil
+    end
+end
+
+function GetPetRegistry()
+    local success, petRegistry = pcall(function()
+        return require(ReplicatedStorage.Data.PetRegistry)
+    end)
+    
+    if success then
+        return petRegistry.PetList
+    else
+        warn("Failed to get pet registry:", petRegistry)
+        return {}
+    end
+end
+
+-- =========== Eggs ==========
+function PetUtils:GetAllOwnedEggs()
     local myEggs = {}
 
     for _, Tool in next, PlayerUtils:GetAllTools() do
