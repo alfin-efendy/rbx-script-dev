@@ -122,7 +122,7 @@ function FarmUtils:GetRandomFarmPoint()
             -- Pick random farm part
             local randomPart = farmParts[math.random(1, #farmParts)]
             if randomPart:IsA("BasePart") then
-                local X1, Z1, X2, Z2 = GetArea(randomPart)
+                local X1, Z1, X2, Z2 = FarmUtils:GetArea(randomPart)
                 local X = math.random(X1, X2)
                 local Z = math.random(Z1, Z2)
                 return Vector3.new(X, 4, Z)
@@ -153,7 +153,7 @@ function FarmUtils:GetBackCornerFarmPoint()
             -- Pick random farm part
             local randomPart = farmParts[math.random(1, #farmParts)]
             if randomPart:IsA("BasePart") then
-                local X1, Z1, X2, Z2 = GetArea(randomPart)
+                local X1, Z1, X2, Z2 = FarmUtils:GetArea(randomPart)
                 return Vector3.new(X1, 4, Z2) -- Back corner (X1,Z2)
             end
         end
