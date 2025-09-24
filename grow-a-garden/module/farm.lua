@@ -3,7 +3,7 @@ local FarmUtils = {}
 local Core
 local PlayerUtils
 
-function FarmUtils:GetFarm(PlayerName: string): Folder?
+function FarmUtils:GetMyFarm(): Folder?
 	local Farms = Core.Workspace.Farm:GetChildren()
 
 	for _, Farm in next, Farms do
@@ -11,7 +11,7 @@ function FarmUtils:GetFarm(PlayerName: string): Folder?
     local Data = Important.Data
     local Owner = Data.Owner
 
-		if Owner.Value == PlayerName then
+		if Owner.Value == Core.LocalPlayer.Name then
 			return Farm
 		end
 	end
@@ -27,9 +27,6 @@ function FarmUtils:Init(core, playerUtils)
     end
     Core = core
     PlayerUtils = playerUtils
-    
-    -- Initialize MyFarm after Core is set
-    FarmUtils.MyFarm = FarmUtils:GetFarm(Core.LocalPlayer.Name)
 end
 
 function FarmUtils:GetArea(Base: Part)
@@ -105,7 +102,7 @@ end
 
 -- Get random point within farm boundaries
 function FarmUtils:GetRandomFarmPoint()
-    local farm = FarmUtils:GetFarm(Core.LocalPlayer.Name)
+    local farm = FarmUtils:GetMyFarm(Core.LocalPlayer.Name)
     if not farm then
         return Vector3.new(0, 4, 0)
     end
@@ -136,7 +133,7 @@ function FarmUtils:GetRandomFarmPoint()
 end
 
 function FarmUtils:GetBackCornerFarmPoint()
-    local farm = FarmUtils:GetFarm(Core.LocalPlayer.Name)
+    local farm = FarmUtils:GetMyFarm(Core.LocalPlayer.Name)
     if not farm then
         return Vector3.new(0, 4, 0)
     end
