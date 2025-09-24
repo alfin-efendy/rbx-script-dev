@@ -213,18 +213,18 @@ function UIPet:CreateEggsSection(petTab)
 
     accordionEggs:AddSeparator()
 
-    local accordionEggs:AddLabel("Select Hatching Special Pet")
-    local selectSpecialPet = accordionEggs:AddSelectBox({
-        Name = "Select Special Pet",
-        Options = {"Loading..."},
-        Placeholder = "Select Special Pet...",
-        MultiSelect = false,
-        Flag = "SpecialHatchingPet",
-        OnInit = function(currentOptions, updateOptions, selectBoxAPI)
-            local specialPets = PetUtils:GetPetRegistry()
-            updateOptions(specialPets)
-        end
-    })
+    -- local accordionEggs:AddLabel("Select Hatching Special Pet")
+    -- local selectSpecialPet = accordionEggs:AddSelectBox({
+    --     Name = "Select Special Pet",
+    --     Options = {"Loading..."},
+    --     Placeholder = "Select Special Pet...",
+    --     MultiSelect = false,
+    --     Flag = "SpecialHatchingPet",
+    --     OnInit = function(currentOptions, updateOptions, selectBoxAPI)
+    --         local specialPets = PetUtils:GetPetRegistry()
+    --         updateOptions(specialPets)
+    --     end
+    -- })
     local accordionEggs:AddLabel("Or If Weight is Higher Than")
     local weightThresholdSpecialHatchingInput = accordionEggs:AddNumberBox({
         Name = "Weight Threshold",
