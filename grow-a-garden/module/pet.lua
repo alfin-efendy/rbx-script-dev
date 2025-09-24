@@ -182,7 +182,7 @@ function PetUtils:PlaceEgg(eggName, maxEggs)
     
     local startPosition = FarmUtils:GetBackCornerFarmPoint()
     for i = 1, availableSlots do
-        local eggTool = GameServices.Backpack:FindFirstChild(eggName)
+        local eggTool = PlayerUtils:GetTool(eggName)
         if eggTool then
             PlayerUtils:EquipTool(eggTool)
         end

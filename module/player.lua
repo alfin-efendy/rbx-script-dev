@@ -93,4 +93,38 @@ function Player:GetAllTools()
     return tools
 end
 
+function Player:GetTool(toolName)
+    if not toolName or type(toolName) ~= "string" then
+        warn("Player:GetTool - Invalid tool name")
+        return nil
+    end
+    
+    local Backpack = Core:GetBackpack()
+    if not Backpack then 
+        warn("Player:GetTool - Backpack not found")
+        return nil 
+    end
+    
+    local tool = nil
+    local success, err = pcall(function()
+        tool = Backpack:FindFirstChild(toolName)
+        if tool and not tool:IsA("Tool") then
+            tool = nil
+        end
+    end)
+    
+    if not success then
+        warn("Player:GetTool - Error finding tool:", err)
+        return nil
+    end
+    
+    if tool then
+        print("Player:GetTool - Found tool:", toolName)
+    else
+        print("Player:GetTool - Tool not found:", toolName)
+    end
+    
+    return tool
+end
+
 return Player
