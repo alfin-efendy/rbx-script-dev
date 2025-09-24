@@ -105,7 +105,7 @@ end
 
 -- Get random point within farm boundaries
 function FarmUtils:GetRandomFarmPoint()
-    local farm = GetFarm(Core.LocalPlayer.Name)
+    local farm = FarmUtils:GetFarm(Core.LocalPlayer.Name)
     if not farm then
         return Vector3.new(0, 4, 0)
     end
@@ -136,7 +136,7 @@ function FarmUtils:GetRandomFarmPoint()
 end
 
 function FarmUtils:GetBackCornerFarmPoint()
-    local farm = GetFarm(Core.LocalPlayer.Name)
+    local farm = FarmUtils:GetFarm(Core.LocalPlayer.Name)
     if not farm then
         return Vector3.new(0, 4, 0)
     end
