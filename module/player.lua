@@ -95,16 +95,4 @@ function Player:GetAllTools()
     return tools
 end
 
--- Debug function to test if module is working
-function Player:Test()
-    print("Player module loaded successfully!")
-    print("Core module:", Core and "OK" or "FAILED")
-    print("LocalPlayer:", Core.LocalPlayer and Core.LocalPlayer.Name or "NOT FOUND")
-    local character = Core:GetCharacter()
-    print("Character:", character and character.Name or "NOT FOUND")
-    local backpack = Core:GetBackpack()
-    print("Backpack:", backpack and "OK" or "NOT FOUND")
-    return true
-end
-
 return Player
