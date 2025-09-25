@@ -12,7 +12,10 @@ Core.VirtualUser = game:GetService("VirtualUser")
 -- Player reference
 Core.LocalPlayer = Core.Players.LocalPlayer
 
--- Dynamic getters (lebih reliable untuk character yang bisa respawn)
+-- References
+Core.GameEvents = Core.ReplicatedStorage.GameEvents
+
+-- Dynamic getters
 function Core:GetCharacter()
     return self.LocalPlayer.Character
 end

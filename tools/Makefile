@@ -159,6 +159,34 @@ install:
 # Force rebuild all bundles
 .PHONY: rebuild
 rebuild: clean bundle
+	@echo "$(PURPLE)📋 Copying latest bundle to clipboard...$(NC)"
+	@if command -v xclip >/dev/null 2>&1; then \
+		latest_bundle=$$(ls -t $(OUTPUT_DIR)/*-bundled.lua 2>/dev/null | head -1); \
+		if [ -f "$$latest_bundle" ]; then \
+			cat "$$latest_bundle" | xclip -selection clipboard; \
+			echo "$(GREEN)✅ Bundle copied to clipboard: $$(basename $$latest_bundle)$(NC)"; \
+		else \
+			echo "$(YELLOW)⚠️  No bundled files found to copy$(NC)"; \
+		fi; \
+	elif command -v pbcopy >/dev/null 2>&1; then \
+		latest_bundle=$$(ls -t $(OUTPUT_DIR)/*-bundled.lua 2>/dev/null | head -1); \
+		if [ -f "$$latest_bundle" ]; then \
+			cat "$$latest_bundle" | pbcopy; \
+			echo "$(GREEN)✅ Bundle copied to clipboard: $$(basename $$latest_bundle)$(NC)"; \
+		else \
+			echo "$(YELLOW)⚠️  No bundled files found to copy$(NC)"; \
+		fi; \
+	elif command -v wl-copy >/dev/null 2>&1; then \
+		latest_bundle=$$(ls -t $(OUTPUT_DIR)/*-bundled.lua 2>/dev/null | head -1); \
+		if [ -f "$$latest_bundle" ]; then \
+			cat "$$latest_bundle" | wl-copy; \
+			echo "$(GREEN)✅ Bundle copied to clipboard: $$(basename $$latest_bundle)$(NC)"; \
+		else \
+			echo "$(YELLOW)⚠️  No bundled files found to copy$(NC)"; \
+		fi; \
+	else \
+		echo "$(YELLOW)⚠️  Clipboard utility not found. Install xclip (X11), wl-clipboard (Wayland), or pbcopy (macOS)$(NC)"; \
+	fi
 
 # Show project info
 .PHONY: info

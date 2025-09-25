@@ -12,14 +12,33 @@ function PetUtils:Init(gameServices, playerUtils, farmUtils, petTeamConfig)
     PetTeamConfig = petTeamConfig
 end
 
+-- =========== Pets ==========
 function PetUtils:GetPetReplicationData()
     local ReplicationClass = require(GameServices.ReplicatedStorage.Modules.ReplicationClass)
     local ActivePetsReplicator = ReplicationClass.new("ActivePetsService_Replicator")
-    ActivePetsReplicator:YieldUntilData()
     return ActivePetsReplicator:YieldUntilData().Table
 end
 
--- =========== Pets ==========
+function PetUtils:GetPlayerPetData()
+    local success, replicationData = pcall(self.GetPetReplicationData, self)
+    if not success then
+        warn("Failed to get replication data:", replicationData)
+        return nil
+    end
+    
+    local playerPetData = replicationData.PlayerPetData
+    local playerData = playerPetData[GameServices.LocalPlayer.Name] or playerPetData[tonumber(GameServices.LocalPlayer.Name)]
+    return playerData
+end
+
+function PetUtils:GetPetData(petUUID)
+    local playerData = self:GetPlayerPetData()
+    if playerData and playerData.PetInventory then
+        return playerData.PetInventory.Data[petUUID]
+    end
+    return nil
+end
+
 function PetUtils:GetAllActivePets()
     local success, replicationData = pcall(function()
         return self:GetPetReplicationData()
@@ -70,6 +89,10 @@ function PetUtils:GetAllPetTeams()
     return PetTeamConfig.GetAllKeys()
 end
 
+function PetUtils:FindPetTeam(teamName)
+    return PetTeamConfig.GetValue(teamName)
+end
+
 function PetUtils:DeleteTeamPets(teamName)
     PetTeamConfig.DeleteKey(teamName)
 end
@@ -95,6 +118,7 @@ function PetUtils:ChangeToTeamPets(teamName)
     for _, petUUID in pairs(petsInTeam) do
         print("Activating Pet from Team:", petUUID)
         self:EquipPet(petUUID)
+        wait(0.5) -- Small delay to avoid spamming the server
     end
 end
 
@@ -132,9 +156,17 @@ function PetUtils:GetPetDetail(petUUID)
             warn("SaveSlots not found in data")
             return nil
         end
+
+        print("Debug: SaveSlots keys:")
+        print("SaveSlot totals:", #saveSlots.AllSlots, " last: ", saveSlots.SelectedSlot)
         
         local savedObjects = saveSlots.AllSlots[saveSlots.SelectedSlot].SavedObjects
         
+        -- print("Debug: SavedObjects keys:")
+        -- for key, value in pairs(savedObjects) do
+        --     print("  Key:", key, "Type:", type(value))
+        -- end
+
         if savedObjects and petUUID and savedObjects[petUUID] then
             return savedObjects[petUUID].Data
         end
@@ -148,6 +180,15 @@ function PetUtils:GetPetDetail(petUUID)
         local replicationData = DataStreamReplicator:YieldUntilData().Table
         local playerData = replicationData[GameServices.LocalPlayer.Name] or replicationData[tostring(GameServices.LocalPlayer.UserId)]
         
+        print("Debug: Player Data Keys:")
+        if playerData then
+            for key, value in pairs(playerData) do
+                print("  Key:", key, "Type:", type(value))
+            end
+        else
+            print("  Player data is nil")
+        end
+
         if playerData and playerData[petUUID] then
             return playerData[petUUID].Data
         end
@@ -205,15 +246,7 @@ function PetUtils:GetPetRegistry()
             table.sort(formattedPets, function(a, b)
                 return string.lower(a.text) < string.lower(b.text)
             end)
-            
-            print("PetUtils:GetPetRegistry - Formatted", #formattedPets, "pets for UI (sorted ascending)")
-            
-            -- Debug: Print first few sorted pets
-            print("First 5 sorted pets:")
-            for i = 1, math.min(5, #formattedPets) do
-                print("  " .. i .. ":", formattedPets[i].text)
-            end
-            
+                        
             return formattedPets
         else
             warn("PetUtils:GetPetRegistry - PetList is nil or not found")
@@ -225,6 +258,53 @@ function PetUtils:GetPetRegistry()
     end
 end
 
+function PetUtils:SellPet(petName, weighLessThan, ageLessThan, sellPetTeam, corePetTeam)
+    if sellPetTeam then
+        print("Changing to Sell Pet Team:", sellPetTeam)
+        self:ChangeToTeamPets(sellPetTeam)
+        wait(2) -- Wait 2 seconds to ensure pets are equipped
+    end
+
+    for _, Tool in next, PlayerUtils:GetAllTools() do
+        local toolType = Tool:GetAttribute("b")
+        local petUUID = Tool:GetAttribute("PET_UUID")
+        local isFavorite = Tool:GetAttribute("d") or false
+
+        if isFavorite then
+            print("Skipping favorite pet:", Tool.Name)
+            continue
+        end
+
+        if toolType == "l" and petUUID then
+            local petData = self:GetPetData(petUUID)
+            local petDetail = petData.PetData
+
+            local petType = petData.PetType or "Unknown"
+            local petWeight = petDetail.BaseWeight or 0
+            local petAge = petDetail.Level or math.huge
+
+            for _, selectedPet in ipairs(petName) do
+                if petType == selectedPet and petWeight <= weighLessThan and petAge <= ageLessThan then
+                    print("Selling Pet:", petType, "Weight:", petWeight, "Age:", petAge)
+
+                    PlayerUtils:EquipTool(Tool)
+                    wait(0.1)
+                    local getEquippedTool = PlayerUtils:GetEquippedTool()
+                    GameServices.GameEvents.SellPet_RE:FireServer(getEquippedTool)
+                    wait(0.1) -- Small delay to avoid spamming the server
+                end
+            end
+        end
+    end
+
+    if corePetTeam then
+        wait(2) -- Wait 2 seconds to ensure pets are equipped
+        print("Reverting to Core Pet Team:", corePetTeam)
+        self:ChangeToTeamPets(corePetTeam)
+        wait(2) -- Wait 2 seconds to ensure pets are equipped
+    end
+end
+
 -- =========== Eggs ==========
 function PetUtils:GetAllOwnedEggs()
     local myEggs = {}
@@ -233,7 +313,7 @@ function PetUtils:GetAllOwnedEggs()
         local toolType = Tool:GetAttribute("b")
         toolType = toolType and string.lower(toolType) or ""
         if toolType == "c" then
-            table.insert(myEggs, {text = Tool.Name, value = Tool.Name})
+            table.insert(myEggs, {text = Tool.Name, value = Tool:GetAttribute("h")})
         end
     end
 
@@ -243,6 +323,21 @@ function PetUtils:GetAllOwnedEggs()
     end)
 
     return myEggs
+end
+
+function PetUtils:FindEggOwnedEgg(eggName)
+    for _, Tool in next, PlayerUtils:GetAllTools() do
+        local toolType = Tool:GetAttribute("b")
+        local toolName = Tool:GetAttribute("h")
+        
+        toolType = toolType and string.lower(toolType) or ""
+        toolName = toolName and string.lower(toolName) or ""
+
+        if toolType == "c" and toolName == eggName then
+            return Tool.Name
+        end
+    end
+    return nil
 end
 
 function PetUtils:GetPlacedEggDetail(eggUUID)

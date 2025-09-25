@@ -46,7 +46,7 @@ end
 
 -- Get center CFrame point of the farm
 function FarmUtils:GetFarmCenterCFrame()    
-    local important = FarmUtils.MyFarm:FindFirstChild("Important")
+    local important = FarmUtils:GetMyFarm():FindFirstChild("Important")
     if not important then
         warn("Important folder not found in farm")
         return nil

@@ -2,6 +2,7 @@ local Player = {}
 
 -- Load Core module with error handling
 local Core
+local antiAFKConnection -- Store the connection reference
 
 function Player:Init(core)
     if not core then
@@ -9,11 +10,23 @@ function Player:Init(core)
     end
     Core = core
 
-    Core.LocalPlayer.Idled:Connect(function()
+    -- Store the connection so we can disconnect it later
+    antiAFKConnection = Core.LocalPlayer.Idled:Connect(function()
         Core.VirtualUser:CaptureController()
         Core.VirtualUser:ClickButton2(Vector2.new())
         print("Anti-AFK: Clicked to prevent idle kick")
     end)
+end
+
+function Player:RemoveAntiAFK()
+    -- Disconnect the stored connection
+    if antiAFKConnection then
+        antiAFKConnection:Disconnect()
+        antiAFKConnection = nil
+        print("Anti-AFK: Disconnected idle connection")
+    else
+        print("Anti-AFK: No connection to disconnect")
+    end
 end
 
 function Player:EquipTool(Tool)
@@ -58,6 +71,32 @@ function Player:EquipTool(Tool)
     end
     
     return true
+end
+
+function Player:GetEquippedTool()
+    local workspace = Core.Workspace
+    local player
+
+    for _, item in ipairs(workspace:GetChildren()) do
+        if item.Name == Core.LocalPlayer.Name and item:FindFirstChildOfClass("Tool") then
+            player = item
+            break
+        end
+    end
+
+    if not player then
+        warn("Player:GetEquippedTool - Player model not found in workspace")
+        return nil
+    end
+
+    for _, item in ipairs(player:GetChildren()) do
+        if item:IsA("Tool") then
+            return item
+        end
+    end
+
+    warn("Player:GetEquippedTool - No tool equipped")
+    return nil
 end
 
 function Player:TeleportToPosition(Position)

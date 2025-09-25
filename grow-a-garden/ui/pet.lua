@@ -3,13 +3,11 @@ local UIPet = {}
 local window
 local PetUtils
 local FarmUtils
-local EzUI
 
-function UIPet:Init(windowInstance, petUtils, farmUtils, ezui)
+function UIPet:Init(windowInstance, petUtils, farmUtils)
     window = windowInstance
     PetUtils = petUtils
     FarmUtils = farmUtils
-    EzUI = ezui
 end
 
 function UIPet:CreatePetTab()
@@ -69,26 +67,34 @@ function UIPet:CreatePetTeamsSection(petTab)
         end
     })
 
+    -- Declare labelCoreTeam variable first (forward declaration)
+    local labelCoreTeam
+
     accordionPetTeams:AddButton("Set Core Team", function()
         local selectedTeam = selectTeam.GetSelected()
         if selectedTeam and #selectedTeam > 0 then
             local teamName = selectedTeam[1]
-            print("Setting core pet team to:", teamName)
             window:SetConfigValue("CorePetTeam", teamName)
+            labelCoreTeam.SetText("Current Core Team: " .. teamName)
         end    
     end)
+
+    -- Create the label after the button
+    labelCoreTeam = accordionPetTeams:AddLabel("Current Core Team: " .. (window:GetConfigValue("CorePetTeam") or "None"))
+
+    accordionPetTeams:AddSeparator()
 
     accordionPetTeams:AddButton("Change Team", function()
         local selectedTeam = selectTeam.GetSelected()
         if selectedTeam and #selectedTeam > 0 then
             local teamName = selectedTeam[1]
-            local petsInTeam = petTeamConfig.GetValue(teamName)
+            local petsInTeam = PetUtils:FindPetTeam(teamName)
 
             if petsInTeam then
                 print("Changing to pet team:", teamName)
                 
                 -- Deactivate all current active pets
-                local activePets = PetUtils:GetActivePets(game.Players.LocalPlayer.Name)
+                local activePets = PetUtils:GetAllActivePets()
                 if activePets then
                     for petUUID, _ in pairs(activePets) do
                         print("Deactivating Active Pet:", petUUID)
@@ -166,29 +172,6 @@ function UIPet:CreateEggsSection(petTab)
         Flag = "MaxPlaceEggs",
     })
 
-    accordionEggs:AddButton("Teleport to Back Corner", function()
-        local backCorner = FarmUtils:GetBackCornerFarmPoint()
-        print("Teleporting to back corner of farm at:", backCorner)
-        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(backCorner)
-    end)
-
-    accordionEggs:AddButton("Place Egg", function()
-        local selectedEgg = eggSelect.GetSelected()
-        local maxEggs = maxPlaceEggs.GetValue()
-
-        if not selectedEgg or #selectedEgg == 0 then
-            print("Please select an egg to place.")
-            return
-        end
-
-        if not maxEggs or maxEggs <= 0 then
-            print("Please enter a valid number for max eggs to place.")
-            return
-        end
-
-        PetUtils:PlaceEgg(selectedEgg[1], maxEggs)
-    end)
-
     accordionEggs:AddSeparator()
 
     accordionEggs:AddLabel("Team for Hatching Eggs")
@@ -199,6 +182,15 @@ function UIPet:CreateEggsSection(petTab)
         Placeholder = "Select Pet Team...",
         MultiSelect = false,
         Flag = "HatchPetTeam",
+        OnInit = function(currentOptions, updateOptions)
+            local listTeamPet = PetUtils:GetAllPetTeams()
+            local currentOptionsSet = {}
+
+            for _, team in pairs(listTeamPet) do
+                table.insert(currentOptionsSet, {text = team, value = team})
+            end
+            updateOptions(currentOptionsSet)
+        end,
         OnDropdownOpen = function(currentOptions, updateOptions)
             local listTeamPet = PetUtils:GetAllPetTeams()
             local currentOptionsSet = {}
@@ -218,7 +210,7 @@ function UIPet:CreateEggsSection(petTab)
         Name = "Select Special Pet",
         Options = {"Loading..."},
         Placeholder = "Select Special Pet...",
-        MultiSelect = false,
+        MultiSelect = true,
         Flag = "SpecialHatchingPet",
         OnInit = function(currentOptions, updateOptions, selectBoxAPI)
             local specialPets = PetUtils:GetPetRegistry()
@@ -238,7 +230,40 @@ function UIPet:CreateEggsSection(petTab)
         Flag = "WeightThresholdSpecialHatching",
     })
 
-    accordionEggs:AddToggle({
+    accordionEggs:AddLabel("Select Team for Special Hatching")
+    local selectTeamForSpecialHatch = accordionEggs:AddSelectBox({
+        Name = "Select Pet Team for Special Hatch",
+        Options = {"Loading..."},
+        Placeholder = "Select Pet Team...",
+        MultiSelect = false,
+        Flag = "SpecialHatchPetTeam",
+        OnInit = function(currentOptions, updateOptions)
+            local listTeamPet = PetUtils:GetAllPetTeams()
+            local currentOptionsSet = {}
+
+            for _, team in pairs(listTeamPet) do
+                table.insert(currentOptionsSet, {text = team, value = team})
+            end
+            updateOptions(currentOptionsSet)
+        end,
+        OnDropdownOpen = function(currentOptions, updateOptions)
+            local listTeamPet = PetUtils:GetAllPetTeams()
+            local currentOptionsSet = {}
+
+            for _, team in pairs(listTeamPet) do
+                table.insert(currentOptionsSet, {text = team, value = team})
+            end
+            updateOptions(currentOptionsSet)
+        end
+    })
+
+    local toggleOnlyHatchWhenReady = accordionEggs:AddToggle({
+        Name = "Only Hatch When Ready",
+        Default = true,
+        Flag = "OnlyHatchWhenReady",
+    })
+
+    local toggleAutoHatch = accordionEggs:AddToggle({
         Name = "Auto Hatch Eggs",
         Default = false,
         Flag = "AutoHatchEggs",
@@ -246,6 +271,108 @@ function UIPet:CreateEggsSection(petTab)
 
     accordionEggs:AddButton("Hatch All Ready Eggs", function()
         PetUtils:HatchEgg()
+    end)
+
+    local accordionSellPets = petTab:AddAccordion({
+        Title = "Sell Pets",
+        Icon = "💰",
+        Expanded = false,
+    })
+
+    accordionSellPets:AddLabel("Select a pet to sell.")
+    local selectPetToSell = accordionSellPets:AddSelectBox({
+        Name = "Select Pet to Sell",
+        Options = {"Loading..."},
+        Placeholder = "Select Pet...",
+        MultiSelect = true,
+        Flag = "PetToSell",
+        OnInit = function(currentOptions, updateOptions, selectBoxAPI)
+            local specialPets = PetUtils:GetPetRegistry()
+            updateOptions(specialPets)
+        end,
+    })
+
+    accordionSellPets:AddLabel("And If Base Weight Is Less Than Or Equal")
+    local weightThresholdSellPet = accordionSellPets:AddNumberBox({
+        Name = "Weight Threshold",
+        Placeholder = "Enter weight...",
+        Default = 1.0,
+        Min = 0.5,
+        Max = 20.0,
+        Increment = 1.0,
+        Decimals = 2,
+        Flag = "WeightThresholdSellPet",
+    })
+
+    accordionSellPets:AddLabel("And If Age Is Less Than Or Equal")
+    local ageThresholdSellPet = accordionSellPets:AddNumberBox({
+        Name = "Age Threshold (in days)",
+        Placeholder = "Enter age...",
+        Default = 1,
+        Min = 1,
+        Max = 100,
+        Increment = 1,
+        Flag = "AgeThresholdSellPet",
+    })
+
+    accordionSellPets:AddLabel("Pet Team to Use for Selling")
+    local selectTeamForSell = accordionSellPets:AddSelectBox({
+        Name = "Select Pet Team for Sell",
+        Options = {"Loading..."},
+        Placeholder = "Select Pet Team...",
+        MultiSelect = false,
+        Flag = "SellPetTeam",
+        OnInit = function(currentOptions, updateOptions)
+            local listTeamPet = PetUtils:GetAllPetTeams()
+            local currentOptionsSet = {}
+            for _, team in pairs(listTeamPet) do
+                table.insert(currentOptionsSet, {text = team, value = team})
+            end
+            updateOptions(currentOptionsSet)
+        end,
+        OnDropdownOpen = function(currentOptions, updateOptions)
+            local listTeamPet = PetUtils:GetAllPetTeams()
+            local currentOptionsSet = {}
+            
+            for _, team in pairs(listTeamPet) do
+                table.insert(currentOptionsSet, {text = team, value = team})
+            end
+                    
+            updateOptions(currentOptionsSet)
+        end
+    })
+
+    accordionSellPets:AddToggle({
+        Name = "Auto Sell Pets After Hatching",
+        Default = false,
+        Flag = "AutoSellPetsAfterHatching",
+    })
+
+    accordionSellPets:AddButton("Sell Selected Pet", function()
+        local selectedPet = selectPetToSell.GetSelected()
+        local weightThreshold = weightThresholdSellPet.GetValue()
+        local ageThreshold = ageThresholdSellPet.GetValue()
+        local sellPetTeam = window:GetConfigValue("SellPetTeam")
+        local corePetTeam = window:GetConfigValue("CorePetTeam")
+
+        if not selectedPet or #selectedPet == 0 then
+            print("Please select a pet to sell.")
+            return
+        end
+        
+        if not weightThreshold or weightThreshold <= 0 then
+            print("Please enter a valid weight threshold to sell.")
+            return
+        end
+
+        if not ageThreshold or ageThreshold <= 0 then
+            print("Please enter a valid age threshold to sell.")
+            return
+        end
+
+        print("Selling pet:", selectedPet[1], "if weight <=", weightThreshold, "and age <=", ageThreshold)
+
+        PetUtils:SellPet(selectedPet, weightThreshold, ageThreshold, sellPetTeam, corePetTeam)
     end)
 end
 

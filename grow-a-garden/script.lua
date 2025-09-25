@@ -26,11 +26,22 @@ local window = EzUI.CreateWindow({
     },
 })
 
+window:SetCloseCallback(function()
+	print("Window is closing! Performing cleanup...")
+	
+    -- Remove Anti-AFK connections
+    PlayerUtils:RemoveAntiAFK()
+    
+    -- Additional cleanup tasks can be added here
+	
+	print("Cleanup completed!")
+end)
+
 -- Initialize modules with dependencies
 PlayerUtils:Init(Core)
 FarmUtils:Init(Core, PlayerUtils)
 PetUtils:Init(Core, PlayerUtils, FarmUtils, EzUI.NewConfig("PetTeamConfig"))
-PetUI:Init(window, PetUtils, FarmUtils, EzUI)
+PetUI:Init(window, PetUtils, FarmUtils)
 
 -- Create UI
 PetUI:CreatePetTab()
