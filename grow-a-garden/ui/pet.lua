@@ -203,6 +203,12 @@ function UIPet:CreateEggsSection(petTab)
         end
     })
 
+    accordionEggs:AddToggle({
+        Name = "Auto Boost Pets Before Hatching",
+        Default = false,
+        Flag = "AutoBoostBeforeHatch",
+    })
+
     accordionEggs:AddSeparator()
 
     accordionEggs:AddLabel("Select Hatching Special Pet")
@@ -210,7 +216,7 @@ function UIPet:CreateEggsSection(petTab)
         Name = "Select Special Pet",
         Options = {"Loading..."},
         Placeholder = "Select Special Pet...",
-        MultiSelect = true,
+        MultiSelect = false,
         Flag = "SpecialHatchingPet",
         OnInit = function(currentOptions, updateOptions, selectBoxAPI)
             local specialPets = PetUtils:GetPetRegistry()
@@ -256,6 +262,14 @@ function UIPet:CreateEggsSection(petTab)
             updateOptions(currentOptionsSet)
         end
     })
+
+    accordionEggs:AddToggle({
+        Name = "Auto Boost Pets Before Special Hatching",
+        Default = false,
+        Flag = "AutoBoostBeforeSpecialHatch",
+    })
+
+    accordionEggs:AddSeparator()
 
     local toggleOnlyHatchWhenReady = accordionEggs:AddToggle({
         Name = "Only Hatch When Ready",
@@ -341,6 +355,11 @@ function UIPet:CreateEggsSection(petTab)
             updateOptions(currentOptionsSet)
         end
     })
+    accordionSellPets:AddToggle({
+        Name = "Auto Boost Pets Before Selling",
+        Default = false,
+        Flag = "AutoBoostBeforeSelling",
+    })
 
     accordionSellPets:AddToggle({
         Name = "Auto Sell Pets After Hatching",
@@ -349,30 +368,7 @@ function UIPet:CreateEggsSection(petTab)
     })
 
     accordionSellPets:AddButton("Sell Selected Pet", function()
-        local selectedPet = selectPetToSell.GetSelected()
-        local weightThreshold = weightThresholdSellPet.GetValue()
-        local ageThreshold = ageThresholdSellPet.GetValue()
-        local sellPetTeam = window:GetConfigValue("SellPetTeam")
-        local corePetTeam = window:GetConfigValue("CorePetTeam")
-
-        if not selectedPet or #selectedPet == 0 then
-            print("Please select a pet to sell.")
-            return
-        end
-        
-        if not weightThreshold or weightThreshold <= 0 then
-            print("Please enter a valid weight threshold to sell.")
-            return
-        end
-
-        if not ageThreshold or ageThreshold <= 0 then
-            print("Please enter a valid age threshold to sell.")
-            return
-        end
-
-        print("Selling pet:", selectedPet[1], "if weight <=", weightThreshold, "and age <=", ageThreshold)
-
-        PetUtils:SellPet(selectedPet, weightThreshold, ageThreshold, sellPetTeam, corePetTeam)
+        PetUtils:SellPet()
     end)
 end
 

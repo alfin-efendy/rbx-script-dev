@@ -73,6 +73,32 @@ function Player:EquipTool(Tool)
     return true
 end
 
+function Player:UnequipTool()
+    local Character = Core:GetCharacter()
+    if not Character then 
+        warn("Player:UnequipTool - Character not found")
+        return false 
+    end
+    
+    local Humanoid = Character:FindFirstChild("Humanoid")
+    if not Humanoid then
+        warn("Player:UnequipTool - Humanoid not found")
+        return false
+    end
+    
+    -- Try to unequip with error handling
+    local success, err = pcall(function()
+        Humanoid:UnequipTools()
+    end)
+    
+    if not success then
+        warn("Player:UnequipTool - Failed to unequip:", err)
+        return false
+    end
+    
+    return true
+end
+
 function Player:GetEquippedTool()
     local workspace = Core.Workspace
     local player

@@ -32,7 +32,8 @@ window:SetCloseCallback(function()
     -- Remove Anti-AFK connections
     PlayerUtils:RemoveAntiAFK()
     
-    -- Additional cleanup tasks can be added here
+    -- Remove Auto Hatch connection
+    PetUtils:RemoveAutoHatchConnection()
 	
 	print("Cleanup completed!")
 end)
@@ -40,7 +41,7 @@ end)
 -- Initialize modules with dependencies
 PlayerUtils:Init(Core)
 FarmUtils:Init(Core, PlayerUtils)
-PetUtils:Init(Core, PlayerUtils, FarmUtils, EzUI.NewConfig("PetTeamConfig"))
+PetUtils:Init(Core, PlayerUtils, FarmUtils, EzUI.NewConfig("PetTeamConfig"), window)
 PetUI:Init(window, PetUtils, FarmUtils)
 
 -- Create UI
