@@ -3,29 +3,60 @@ local Core
 local PlayerUtils
 local Window
 
--- Automation state
+-- Automation state (dynamic from config)
 local AutomationState = {
-    seeds = false,
-    eggs = false,
-    gears = false,
     connections = {},
     textConnections = {},
     lastStockCheck = {}
 }
 
-function m:Init(_Core, _PlayerUtils, _Window)
-    Core = _Core
-    PlayerUtils = _PlayerUtils
-    Window = _Window
-   
-    -- Try to get config values with debugging
-    local seedValue = Window and Window:GetConfigValue("AutoBuySeeds")
-    local eggValue = Window and Window:GetConfigValue("AutoBuyEggs") 
-    local gearValue = Window and Window:GetConfigValue("AutoBuyGears")
+-- Dynamic getters for automation states from config
+function AutomationState:GetSeedState()
+    return Window and Window:GetConfigValue("AutoBuySeeds") or false
+end
+
+function AutomationState:GetEggState()
+    return Window and Window:GetConfigValue("AutoBuyEggs") or false
+end
+
+function AutomationState:GetGearState()
+    return Window and Window:GetConfigValue("AutoBuyGears") or false
+end
+
+-- Compatibility properties for dynamic access
+setmetatable(AutomationState, {
+    __index = function(self, key)
+        if key == "seeds" then
+            return self:GetSeedState()
+        elseif key == "eggs" then
+            return self:GetEggState()
+        elseif key == "gears" then
+            return self:GetGearState()
+        end
+        return rawget(self, key)
+    end,
+    __newindex = function(self, key, value)
+        -- Block setting automation states directly
+        if key == "seeds" or key == "eggs" or key == "gears" then
+            warn("Cannot set automation state directly. Use config values instead.")
+            return
+        end
+        rawset(self, key, value)
+    end
+})
+
+function m:Init(CoreInstance, PlayerUtilsInstance, WindowInstance)
+    Core = CoreInstance
+    PlayerUtils = PlayerUtilsInstance
+    Window = WindowInstance
+
+    wait(3) -- Ensure GUI is loaded
     
-    AutomationState.seeds = seedValue == true or seedValue == "true"
-    AutomationState.eggs = eggValue == true or eggValue == "true"
-    AutomationState.gears = gearValue == true or gearValue == "true"
+    -- Debug config values (now dynamic)
+    print("🔍 Config values (dynamic):")
+    print("🌱 Seed Automation:", AutomationState.seeds)
+    print("🥚 Egg Automation:", AutomationState.eggs)
+    print("⚙️ Gear Automation:", AutomationState.gears)
 
     self:StopAllAutomation() -- Ensure all automation is stopped on init
     
@@ -343,7 +374,6 @@ function m:StartSeedAutomation()
         return
     end
     
-    AutomationState.seeds = true
     print("🌱 Starting Seed Automation (event-based)")
     
     for key, _ in pairs(AutomationState.lastStockCheck) do
@@ -381,9 +411,7 @@ function m:StartEggAutomation()
         warn("Egg automation is already running")
         return
     end
-    
-    AutomationState.eggs = true
-    
+
     -- Reset stock tracking to ensure next restock triggers purchase
     for key, _ in pairs(AutomationState.lastStockCheck) do
         if key:match("^eggs_") then
@@ -420,8 +448,6 @@ function m:StartGearAutomation()
         warn("Gear automation is already running")
         return
     end
-    
-    AutomationState.gears = true
     
     -- Reset stock tracking to ensure next restock triggers purchase
     for key, _ in pairs(AutomationState.lastStockCheck) do
@@ -466,7 +492,35 @@ function m:StopSeedAutomation()
         return
     end
     
-    AutomationState.seeds = false
+    -- Set config value to false
+    if Window and Window.SetConfigValue then
+        Window:SetConfigValue("AutoBuySeeds", false)
+    end
+    
+    -- Disconnect all seed-related connections
+    for key, connection in pairs(AutomationState.textConnections) do
+        if key:match("^seeds_") then
+            if connection and connection.Connected then
+                connection:Disconnect()
+            end
+            AutomationState.textConnections[key] = nil
+        end
+    end
+    
+    -- Clear seed stock tracking
+    for key, _ in pairs(AutomationState.lastStockCheck) do
+        if key:match("^seeds_") then
+            AutomationState.lastStockCheck[key] = nil
+        end
+    end
+    
+    -- Disconnect child added connection
+    if AutomationState.connections.seeds_childAdded then
+        AutomationState.connections.seeds_childAdded:Disconnect()
+        AutomationState.connections.seeds_childAdded = nil
+    end
+    
+    print("🛑 Stopped Seed Automation & Disconnected Connections")
 end
 
 function m:StopEggAutomation()
@@ -475,10 +529,35 @@ function m:StopEggAutomation()
         return
     end
     
-    AutomationState.eggs = false
+    -- Set config value to false
+    if Window and Window.SetConfigValue then
+        Window:SetConfigValue("AutoBuyEggs", false)
+    end
     
-    -- Note: We keep connections alive for faster restart
-    -- Connections will only be disconnected on StopAllAutomation or script termination
+    -- Disconnect all egg-related connections
+    for key, connection in pairs(AutomationState.textConnections) do
+        if key:match("^eggs_") then
+            if connection and connection.Connected then
+                connection:Disconnect()
+            end
+            AutomationState.textConnections[key] = nil
+        end
+    end
+    
+    -- Clear egg stock tracking
+    for key, _ in pairs(AutomationState.lastStockCheck) do
+        if key:match("^eggs_") then
+            AutomationState.lastStockCheck[key] = nil
+        end
+    end
+    
+    -- Disconnect child added connection
+    if AutomationState.connections.eggs_childAdded then
+        AutomationState.connections.eggs_childAdded:Disconnect()
+        AutomationState.connections.eggs_childAdded = nil
+    end
+    
+    print("🛑 Stopped Egg Automation & Disconnected Connections")
 end
 
 function m:StopGearAutomation()
@@ -487,16 +566,67 @@ function m:StopGearAutomation()
         return
     end
     
-    AutomationState.gears = false
+    -- Set config value to false
+    if Window and Window.SetConfigValue then
+        Window:SetConfigValue("AutoBuyGears", false)
+    end
     
-    -- Note: We keep connections alive for faster restart
-    -- Connections will only be disconnected on StopAllAutomation or script termination
+    -- Disconnect all gear-related connections
+    for key, connection in pairs(AutomationState.textConnections) do
+        if key:match("^gears_") then
+            if connection and connection.Connected then
+                connection:Disconnect()
+            end
+            AutomationState.textConnections[key] = nil
+        end
+    end
+    
+    -- Clear gear stock tracking
+    for key, _ in pairs(AutomationState.lastStockCheck) do
+        if key:match("^gears_") then
+            AutomationState.lastStockCheck[key] = nil
+        end
+    end
+    
+    -- Disconnect child added connection
+    if AutomationState.connections.gears_childAdded then
+        AutomationState.connections.gears_childAdded:Disconnect()
+        AutomationState.connections.gears_childAdded = nil
+    end
+    
+    print("🛑 Stopped Gear Automation & Disconnected Connections")
 end
 
 function m:StopAllAutomation()
+    print("🛑 Stopping ALL Shop Automations & Disconnecting All Connections!")
     self:StopSeedAutomation()
     self:StopEggAutomation()
     self:StopGearAutomation()
+end
+
+function m:DisconnectAllConnections()
+    print("🔌 Disconnecting ALL shop connections...")
+    
+    -- Disconnect all text connections
+    for key, connection in pairs(AutomationState.textConnections) do
+        if connection and connection.Connected then
+            connection:Disconnect()
+        end
+        AutomationState.textConnections[key] = nil
+    end
+    
+    -- Disconnect all child added connections
+    for key, connection in pairs(AutomationState.connections) do
+        if connection and connection.Connected then
+            connection:Disconnect()
+        end
+        AutomationState.connections[key] = nil
+    end
+    
+    -- Clear all stock tracking
+    AutomationState.lastStockCheck = {}
+    
+    print("✅ All connections disconnected and cleaned up")
 end
 
 
