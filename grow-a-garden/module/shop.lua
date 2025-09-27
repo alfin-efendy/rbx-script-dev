@@ -492,35 +492,7 @@ function m:StopSeedAutomation()
         return
     end
     
-    -- Set config value to false
-    if Window and Window.SetConfigValue then
-        Window:SetConfigValue("AutoBuySeeds", false)
-    end
-    
-    -- Disconnect all seed-related connections
-    for key, connection in pairs(AutomationState.textConnections) do
-        if key:match("^seeds_") then
-            if connection and connection.Connected then
-                connection:Disconnect()
-            end
-            AutomationState.textConnections[key] = nil
-        end
-    end
-    
-    -- Clear seed stock tracking
-    for key, _ in pairs(AutomationState.lastStockCheck) do
-        if key:match("^seeds_") then
-            AutomationState.lastStockCheck[key] = nil
-        end
-    end
-    
-    -- Disconnect child added connection
-    if AutomationState.connections.seeds_childAdded then
-        AutomationState.connections.seeds_childAdded:Disconnect()
-        AutomationState.connections.seeds_childAdded = nil
-    end
-    
-    print("🛑 Stopped Seed Automation & Disconnected Connections")
+    print("🛑 Stopped Seed Automation")
 end
 
 function m:StopEggAutomation()
@@ -529,35 +501,7 @@ function m:StopEggAutomation()
         return
     end
     
-    -- Set config value to false
-    if Window and Window.SetConfigValue then
-        Window:SetConfigValue("AutoBuyEggs", false)
-    end
-    
-    -- Disconnect all egg-related connections
-    for key, connection in pairs(AutomationState.textConnections) do
-        if key:match("^eggs_") then
-            if connection and connection.Connected then
-                connection:Disconnect()
-            end
-            AutomationState.textConnections[key] = nil
-        end
-    end
-    
-    -- Clear egg stock tracking
-    for key, _ in pairs(AutomationState.lastStockCheck) do
-        if key:match("^eggs_") then
-            AutomationState.lastStockCheck[key] = nil
-        end
-    end
-    
-    -- Disconnect child added connection
-    if AutomationState.connections.eggs_childAdded then
-        AutomationState.connections.eggs_childAdded:Disconnect()
-        AutomationState.connections.eggs_childAdded = nil
-    end
-    
-    print("🛑 Stopped Egg Automation & Disconnected Connections")
+    print("🛑 Stopped Egg Automation")
 end
 
 function m:StopGearAutomation()
@@ -566,67 +510,13 @@ function m:StopGearAutomation()
         return
     end
     
-    -- Set config value to false
-    if Window and Window.SetConfigValue then
-        Window:SetConfigValue("AutoBuyGears", false)
-    end
-    
-    -- Disconnect all gear-related connections
-    for key, connection in pairs(AutomationState.textConnections) do
-        if key:match("^gears_") then
-            if connection and connection.Connected then
-                connection:Disconnect()
-            end
-            AutomationState.textConnections[key] = nil
-        end
-    end
-    
-    -- Clear gear stock tracking
-    for key, _ in pairs(AutomationState.lastStockCheck) do
-        if key:match("^gears_") then
-            AutomationState.lastStockCheck[key] = nil
-        end
-    end
-    
-    -- Disconnect child added connection
-    if AutomationState.connections.gears_childAdded then
-        AutomationState.connections.gears_childAdded:Disconnect()
-        AutomationState.connections.gears_childAdded = nil
-    end
-    
-    print("🛑 Stopped Gear Automation & Disconnected Connections")
+    print("🛑 Stopped Gear Automation")
 end
 
 function m:StopAllAutomation()
-    print("🛑 Stopping ALL Shop Automations & Disconnecting All Connections!")
     self:StopSeedAutomation()
     self:StopEggAutomation()
     self:StopGearAutomation()
-end
-
-function m:DisconnectAllConnections()
-    print("🔌 Disconnecting ALL shop connections...")
-    
-    -- Disconnect all text connections
-    for key, connection in pairs(AutomationState.textConnections) do
-        if connection and connection.Connected then
-            connection:Disconnect()
-        end
-        AutomationState.textConnections[key] = nil
-    end
-    
-    -- Disconnect all child added connections
-    for key, connection in pairs(AutomationState.connections) do
-        if connection and connection.Connected then
-            connection:Disconnect()
-        end
-        AutomationState.connections[key] = nil
-    end
-    
-    -- Clear all stock tracking
-    AutomationState.lastStockCheck = {}
-    
-    print("✅ All connections disconnected and cleaned up")
 end
 
 
