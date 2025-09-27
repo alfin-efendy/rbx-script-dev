@@ -7,6 +7,8 @@ local PlayerUtils = require('../module/player.lua')
 local FarmUtils = require('module/farm.lua')
 local PetUtils = require('module/pet.lua')
 local PetUI = require('ui/pet.lua')
+local ShopModule = require('module/shop.lua')
+local ShopUI = require('ui/shop.lua')
 
 -- Initialize window
 local window = EzUI.CreateWindow({
@@ -26,16 +28,22 @@ local window = EzUI.CreateWindow({
 })
 
 window:SetCloseCallback(function()
-	print("Window is closing! Performing cleanup...")
+	print("window is closing! Performing cleanup...")
 	
     -- Remove Anti-AFK connections
     PlayerUtils:RemoveAntiAFK()
     
     -- Remove Auto Hatch connection
     PetUtils:RemoveAutoHatchConnection()
+
+    -- Stop all Shop automation
+    ShopModule:StopAllAutomation()
 	
 	print("Cleanup completed!")
 end)
+
+-- Wait load config
+wait(1) -- Ensure config is loaded
 
 -- Initialize modules with dependencies
 PlayerUtils:Init(Core)
@@ -43,5 +51,10 @@ FarmUtils:Init(Core, PlayerUtils)
 PetUtils:Init(Core, PlayerUtils, FarmUtils, EzUI.NewConfig("PetTeamConfig"), window)
 PetUI:Init(window, PetUtils, FarmUtils)
 
+-- Shop
+ShopModule:Init(Core, PlayerUtils, window)
+ShopUI:Init(window, ShopModule)
+
 -- Create UI
 PetUI:CreatePetTab()
+ShopUI:CreateShopTab()

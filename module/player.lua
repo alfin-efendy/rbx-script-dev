@@ -140,6 +140,8 @@ function Player:GetPosition()
 end
 
 function Player:GetAllTools()
+    self:UnequipTool() -- Ensure no tool is equipped before fetching
+    wait(0.5) -- Small delay to ensure state is updated
     local Backpack = Core:GetBackpack()
     if not Backpack then 
         warn("Player:GetAllTools - Backpack not found")

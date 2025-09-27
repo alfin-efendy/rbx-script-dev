@@ -275,21 +275,16 @@ function UIPet:CreateEggsSection(petTab)
 
     accordionEggs:AddSeparator()
 
-    local toggleOnlyHatchWhenReady = accordionEggs:AddToggle({
-        Name = "Only Hatch When Ready",
-        Default = true,
-        Flag = "OnlyHatchWhenReady",
-    })
-
     local toggleAutoHatch = accordionEggs:AddToggle({
         Name = "Auto Hatch Eggs",
         Default = false,
         Flag = "AutoHatchEggs",
+        Callback = function(value)
+            if value then
+                PetUtils:QueueHatchRequest()
+            end
+        end
     })
-
-    accordionEggs:AddButton("Hatch All Ready Eggs", function()
-        PetUtils:HatchEgg()
-    end)
 
     local accordionSellPets = petTab:AddAccordion({
         Title = "Sell Pets",

@@ -18,10 +18,12 @@ function PetUtils:Init(gameServices, playerUtils, farmUtils, petTeamConfig, wind
     Window = window
     
     -- Auto Hatch Egg When Ready
-    local iSEnabledAutoHatch = Window:GetConfigValue("AutoHatchEggs") or false
     local EggReadyToHatchRemote = gameServices.GameEvents.EggReadyToHatch_RE
-    
+    local iSEnabledAutoHatch = false
+
     AutoHatchConnection = EggReadyToHatchRemote.OnClientEvent:Connect(function(petName, eggUUID)
+        iSEnabledAutoHatch = Window:GetConfigValue("AutoHatchEggs") or false
+        
         if not iSEnabledAutoHatch then
             return
         end
@@ -108,6 +110,31 @@ function PetUtils:BoostPet(petID)
     )
 end
 
+function PetUtils:EligiblePetUseBoost(petUUID, boostType, boostAmount)
+    local petData = self:GetPetData(petUUID)
+    local isEligible = true
+
+    if petData and petData.PetData then
+
+        -- Pet Data properties
+        for key, value in pairs(petData.PetData) do
+            if type(value) == "table" then
+                if key == "Boosts" and #value > 0 then
+                    for i, boostInfo in ipairs(value) do
+                        local currentBoostType = boostInfo.BoostType
+                        local currentBoostAmount = boostInfo.BoostAmount
+
+                        if currentBoostType == boostType and currentBoostAmount == boostAmount then
+                            isEligible = false
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return isEligible
+end
+
 function PetUtils:BoostAllActivePets()
     local activePets = self:GetAllActivePets()
     if not activePets then
@@ -132,8 +159,17 @@ function PetUtils:BoostAllActivePets()
     
     for _, Tool in next, boostTool do
         PlayerUtils:EquipTool(Tool)
+        local boostType = Tool:GetAttribute("q")
+        local boostAmount = Tool:GetAttribute("o")
+        
         wait(0.5)
         for petUUID, _ in pairs(activePets) do
+            local isEligible = self:EligiblePetUseBoost(petUUID, boostType, boostAmount)
+
+            if not isEligible then
+                continue
+            end
+
             self:BoostPet(petUUID)
             wait(1) -- Small delay to avoid spamming the server
         end
