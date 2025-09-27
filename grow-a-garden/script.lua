@@ -1,13 +1,12 @@
 -- Main entry point
 local EzUI = loadstring(game:HttpGet('https://raw.githubusercontent.com/alfin-efendy/ez-rbx-ui/refs/heads/main/ui.lua'))()
 
--- Import modules
--- Load Core module with error handling
-local Core = loadstring(game:HttpGet('https://raw.githubusercontent.com/alfin-efendy/rbx-script-dev/refs/heads/main/module/core.lua'))()
-local PlayerUtils = loadstring(game:HttpGet('https://raw.githubusercontent.com/alfin-efendy/rbx-script-dev/refs/heads/main/module/player.lua'))()
-local FarmUtils = loadstring(game:HttpGet('https://raw.githubusercontent.com/alfin-efendy/rbx-script-dev/refs/heads/main/grow-a-garden/module/farm.lua'))()
-local PetUtils = loadstring(game:HttpGet('https://raw.githubusercontent.com/alfin-efendy/rbx-script-dev/refs/heads/main/grow-a-garden/module/pet.lua'))()
-local PetUI = loadstring(game:HttpGet('https://raw.githubusercontent.com/alfin-efendy/rbx-script-dev/refs/heads/main/grow-a-garden/ui/pet.lua'))()
+-- Import local modules
+local Core = require('../module/core.lua')
+local PlayerUtils = require('../module/player.lua')
+local FarmUtils = require('module/farm.lua')
+local PetUtils = require('module/pet.lua')
+local PetUI = require('ui/pet.lua')
 
 -- Initialize window
 local window = EzUI.CreateWindow({

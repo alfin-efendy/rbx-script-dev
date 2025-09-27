@@ -160,7 +160,6 @@ function Player:GetAllTools()
         return {}
     end
     
-    print("Player:GetAllTools - Found", #tools, "tools")
     return tools
 end
 
@@ -189,10 +188,8 @@ function Player:GetTool(toolName)
         return nil
     end
     
-    if tool then
-        print("Player:GetTool - Found tool:", toolName)
-    else
-        print("Player:GetTool - Tool not found:", toolName)
+    if not tool then
+        warn("Player:GetTool - Tool not found:", toolName)
     end
     
     return tool

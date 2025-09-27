@@ -3,7 +3,7 @@ local FarmUtils = {}
 local Core
 local PlayerUtils
 
-function FarmUtils:GetMyFarm(): Folder?
+function FarmUtils:GetMyFarm()
 	local Farms = Core.Workspace.Farm:GetChildren()
 
 	for _, Farm in next, Farms do
@@ -46,10 +46,16 @@ end
 
 -- Get center CFrame point of the farm
 function FarmUtils:GetFarmCenterCFrame()    
-    local important = FarmUtils:GetMyFarm():FindFirstChild("Important")
+    local farm = FarmUtils:GetMyFarm()
+    if not farm then
+        warn("Farm not found for player:", Core.LocalPlayer.Name)
+        return CFrame.new(0, 4, 0) -- Default position
+    end
+    
+    local important = farm:FindFirstChild("Important")
     if not important then
         warn("Important folder not found in farm")
-        return nil
+        return CFrame.new(0, 4, 0) -- Default position
     end
     
     -- Try to find Plant_Locations first
@@ -95,14 +101,14 @@ function FarmUtils:GetFarmCenterCFrame()
         local pos = farm.PrimaryPart.Position
         return CFrame.new(pos.X, pos.Y + 4, pos.Z)
     end
-    
-    warn("Could not determine farm center for player:", playerName or Core.LocalPlayer.Name)
+
+    warn("Could not determine farm center for player:", Core.LocalPlayer.Name)
     return CFrame.new(0, 4, 0) -- Default position
 end
 
 -- Get random point within farm boundaries
 function FarmUtils:GetRandomFarmPoint()
-    local farm = FarmUtils:GetMyFarm(Core.LocalPlayer.Name)
+    local farm = FarmUtils:GetMyFarm()
     if not farm then
         return Vector3.new(0, 4, 0)
     end
@@ -133,7 +139,7 @@ function FarmUtils:GetRandomFarmPoint()
 end
 
 function FarmUtils:GetBackCornerFarmPoint()
-    local farm = FarmUtils:GetMyFarm(Core.LocalPlayer.Name)
+    local farm = FarmUtils:GetMyFarm()
     if not farm then
         return Vector3.new(0, 4, 0)
     end

@@ -7,6 +7,9 @@ local PetTeamConfig
 local Window
 local AutoHatchConnection
 
+-- Prevent collision flags
+local isHatchingInProgress = false
+
 function PetUtils:Init(gameServices, playerUtils, farmUtils, petTeamConfig, window)
     GameServices = gameServices
     PlayerUtils = playerUtils
@@ -15,28 +18,46 @@ function PetUtils:Init(gameServices, playerUtils, farmUtils, petTeamConfig, wind
     Window = window
     
     -- Auto Hatch Egg When Ready
+    local iSEnabledAutoHatch = Window:GetConfigValue("AutoHatchEggs") or false
     local EggReadyToHatchRemote = gameServices.GameEvents.EggReadyToHatch_RE
+    
     AutoHatchConnection = EggReadyToHatchRemote.OnClientEvent:Connect(function(petName, eggUUID)
-        print("🥚 Egg Ready to Hatch - Pet:", petName, "UUID:", eggUUID)
-        
-        local iSEnabledAutoHatch = Window:GetConfigValue("AutoHatchEggs") or false
         if not iSEnabledAutoHatch then
-            print("Auto hatch is disabled in settings.")
             return
         end
-
-        self:HatchEgg()
+        -- Add to queue instead of direct execution
+        self:QueueHatchRequest()
     end)
+    
+    -- Init Queue
+    if not iSEnabledAutoHatch then
+        return
+    end
+    self:QueueHatchRequest()
 end
 
 -- =========== Pets ==========
 function PetUtils:RemoveAutoHatchConnection()
     if AutoHatchConnection then
         AutoHatchConnection:Disconnect()
-        print("Auto Hatch connection removed.")
-    else
-        print("No Auto Hatch connection to remove.")
     end
+end
+
+-- =========== Queue Management ==========
+function PetUtils:QueueHatchRequest()
+    -- If already processing, don't start another process
+    if isHatchingInProgress then
+        print("Hatching already in progress, waiting...")
+        return
+    end
+
+    isHatchingInProgress = true
+
+    -- Execute hatch
+    self:HatchEgg()
+
+    wait(1)
+    isHatchingInProgress = false
 end
 
 function PetUtils:GetPetReplicationData()
@@ -109,15 +130,12 @@ function PetUtils:BoostAllActivePets()
         return
     end
     
-    print("Using boost tool(s):", #boostTool)
-
     for _, Tool in next, boostTool do
         PlayerUtils:EquipTool(Tool)
-        wait(0.1)
+        wait(0.5)
         for petUUID, _ in pairs(activePets) do
-            print("Boosting Active Pet:", petUUID)
             self:BoostPet(petUUID)
-            wait(0.5) -- Small delay to avoid spamming the server
+            wait(1) -- Small delay to avoid spamming the server
         end
     end
 
@@ -180,16 +198,13 @@ function PetUtils:ChangeToTeamPets(teamName)
     local activePets = self:GetAllActivePets(GameServices.LocalPlayer.Name)
     if activePets then
         for petUUID, _ in pairs(activePets) do
-            print("Deactivating Active Pet:", petUUID)
             self:UnequipPet(petUUID)
         end
     end
 
     -- Activate pets in the selected team
     for _, petUUID in pairs(petsInTeam) do
-        print("Activating Pet from Team:", petUUID)
         self:EquipPet(petUUID)
-        wait(0.5) -- Small delay to avoid spamming the server
     end
 end
 
@@ -204,10 +219,15 @@ function PetUtils:GetAllOwnedPets()
         end
     end
 
-    -- Sort pets alphabetically (ascending order)
-    table.sort(myPets, function(a, b)
-        return string.lower(a.text) < string.lower(b.text)
-    end)
+    -- Sort pets alphabetically (ascending order) - Safe for all executors  
+    if #myPets > 0 then
+        table.sort(myPets, function(a, b)
+            if not a or not b or not a.text or not b.text then
+                return false
+            end
+            return string.lower(tostring(a.text)) < string.lower(tostring(b.text))
+        end)
+    end
 
     return myPets
 end
@@ -227,16 +247,8 @@ function PetUtils:GetPetDetail(petUUID)
             warn("SaveSlots not found in data")
             return nil
         end
-
-        print("Debug: SaveSlots keys:")
-        print("SaveSlot totals:", #saveSlots.AllSlots, " last: ", saveSlots.SelectedSlot)
         
         local savedObjects = saveSlots.AllSlots[saveSlots.SelectedSlot].SavedObjects
-        
-        -- print("Debug: SavedObjects keys:")
-        -- for key, value in pairs(savedObjects) do
-        --     print("  Key:", key, "Type:", type(value))
-        -- end
 
         if savedObjects and petUUID and savedObjects[petUUID] then
             return savedObjects[petUUID].Data
@@ -251,15 +263,6 @@ function PetUtils:GetPetDetail(petUUID)
         local replicationData = DataStreamReplicator:YieldUntilData().Table
         local playerData = replicationData[GameServices.LocalPlayer.Name] or replicationData[tostring(GameServices.LocalPlayer.UserId)]
         
-        print("Debug: Player Data Keys:")
-        if playerData then
-            for key, value in pairs(playerData) do
-                print("  Key:", key, "Type:", type(value))
-            end
-        else
-            print("  Player data is nil")
-        end
-
         if playerData and playerData[petUUID] then
             return playerData[petUUID].Data
         end
@@ -284,7 +287,6 @@ function PetUtils:GetPetRegistry()
         local petList = petRegistry.PetList
         
         if petList then
-            local count = 0            
             -- Convert PetList to UI format {text = ..., value = ...}
             local formattedPets = {}
             for petName, petData in pairs(petList) do
@@ -294,10 +296,15 @@ function PetUtils:GetPetRegistry()
                 })
             end
             
-            -- Sort pets alphabetically (ascending order)
-            table.sort(formattedPets, function(a, b)
-                return string.lower(a.text) < string.lower(b.text)
-            end)
+            -- Sort pets alphabetically (ascending order) - Safe for all executors
+            if #formattedPets > 0 then
+                table.sort(formattedPets, function(a, b)
+                    if not a or not b or not a.text or not b.text then
+                        return false
+                    end
+                    return string.lower(tostring(a.text)) < string.lower(tostring(b.text))
+                end)
+            end
                         
             return formattedPets
         else
@@ -312,39 +319,26 @@ end
 
 function PetUtils:SellPet()
     local petName = Window:GetConfigValue("PetToSell") or {}
-    local weighLessThan = Window:GetConfigValue("WeightLessThan") or 0
-    local ageLessThan = Window:GetConfigValue("AgeLessThan") or 0
+    local weighLessThan = Window:GetConfigValue("WeightThresholdSellPet") or 1
+    local ageLessThan = Window:GetConfigValue("AgeThresholdSellPet") or 1
     local sellPetTeam = Window:GetConfigValue("SellPetTeam") or nil
     local boostBeforeSelling = Window:GetConfigValue("AutoBoostBeforeSelling") or false
     local corePetTeam = Window:GetConfigValue("CorePetTeam") or nil
-
 
     if #petName == 0 then
         print("No pet selected for selling.")
         return
     end
 
-    if weighLessThan <= 0 then
-        print("Weight threshold must be greater than 0.")
-        return
-    end
-
-    if ageLessThan <= 0 then
-        print("Age threshold must be greater than 0.")
-        return
-    end
-
     if sellPetTeam then
-        print("Changing to Sell Pet Team:", sellPetTeam)
         self:ChangeToTeamPets(sellPetTeam)
-        wait(2) -- Wait 2 seconds to ensure pets are equipped
-        
-        if boostBeforeSelling then
-            print("Auto boosting pets before selling...")
-            self:BoostAllActivePets()
-        else
-            print("Auto boost before selling is disabled.")
-        end
+        wait(2)
+    end
+
+    if boostBeforeSelling then
+        wait(2)
+        PlayerUtils:UnequipTool()
+        self:BoostAllActivePets()
     end
 
     for _, Tool in next, PlayerUtils:GetAllTools() do
@@ -352,38 +346,35 @@ function PetUtils:SellPet()
         local petUUID = Tool:GetAttribute("PET_UUID")
         local isFavorite = Tool:GetAttribute("d") or false
 
-        if isFavorite then
-            print("Skipping favorite pet:", Tool.Name)
-            continue
-        end
-
-        if toolType == "l" and petUUID then
+        if not isFavorite and toolType == "l" and petUUID then
             local petData = self:GetPetData(petUUID)
-            local petDetail = petData.PetData
+            if petData then
+                local petDetail = petData.PetData
+                local petType = petData.PetType or "Unknown"
+                local petWeight = petDetail.BaseWeight or 0
+                local petAge = petDetail.Level or math.huge
 
-            local petType = petData.PetType or "Unknown"
-            local petWeight = petDetail.BaseWeight or 0
-            local petAge = petDetail.Level or math.huge
+                for _, selectedPet in ipairs(petName) do
+                    if petType == selectedPet 
+                        and petWeight <= weighLessThan
+                        and petAge <= ageLessThan then
 
-            for _, selectedPet in ipairs(petName) do
-                if petType == selectedPet and petWeight <= weighLessThan and petAge <= ageLessThan then
-                    print("Selling Pet:", petType, "Weight:", petWeight, "Age:", petAge)
-
-                    PlayerUtils:EquipTool(Tool)
-                    wait(0.1)
-                    local getEquippedTool = PlayerUtils:GetEquippedTool()
-                    GameServices.GameEvents.SellPet_RE:FireServer(getEquippedTool)
-                    wait(0.1) -- Small delay to avoid spamming the server
+                        PlayerUtils:EquipTool(Tool)
+                        wait(0.5)
+                        local getEquippedTool = PlayerUtils:GetEquippedTool()
+                        GameServices.GameEvents.SellPet_RE:FireServer(getEquippedTool)
+                        wait(0.5)
+                    end
                 end
             end
         end
     end
 
     if corePetTeam then
-        wait(2) -- Wait 2 seconds to ensure pets are equipped
+        wait(2)
         print("Reverting to Core Pet Team:", corePetTeam)
         self:ChangeToTeamPets(corePetTeam)
-        wait(2) -- Wait 2 seconds to ensure pets are equipped
+        wait(2)
     end
 end
 
@@ -399,10 +390,15 @@ function PetUtils:GetAllOwnedEggs()
         end
     end
 
-    -- Sort eggs alphabetically (ascending order)
-    table.sort(myEggs, function(a, b)
-        return string.lower(a.text) < string.lower(b.text)
-    end)
+    -- Sort eggs alphabetically (ascending order) - Safe for all executors
+    if #myEggs > 0 then
+        table.sort(myEggs, function(a, b)
+            if not a or not b or not a.text or not b.text then
+                return false
+            end
+            return string.lower(tostring(a.text)) < string.lower(tostring(b.text))
+        end)
+    end
 
     return myEggs
 end
@@ -498,40 +494,33 @@ function PetUtils:GetAllPlacedEggs()
 end
 
 function PetUtils:HatchEgg()
+    print("Hatching eggs...")
     local placedEggs = self:GetAllPlacedEggs()
     if #placedEggs == 0 then
         print("No placed eggs found to hatch.")
         return
     end
 
-    local isAllEggsIsReady = true
+    wait(2)
+    local maxTimeToHatch = 0
     local eggsToHatch = {}
-    
+
     for _, egg in pairs(placedEggs) do
         if egg.Name == "PetEgg" then
             local owner = egg:GetAttribute("OWNER")
-            local timeToHatch = egg:GetAttribute("TimeToHatch")
-            local eggName = egg:GetAttribute("EggName")
-            
-            if owner ~= GameServices.LocalPlayer.Name then
-                continue
+            local timeToHatch = egg:GetAttribute("TimeToHatch") or 0
+            if owner == GameServices.LocalPlayer.Name then
+                if timeToHatch > 0 then
+                    maxTimeToHatch = math.max(maxTimeToHatch, timeToHatch)
+                end
+                table.insert(eggsToHatch, egg)
             end
-            
-            if timeToHatch and timeToHatch > 0 then
-                warn("Egg not ready to hatch:", eggName, "Time left (s):", timeToHatch)
-                isAllEggsIsReady = false
-                break
-            end
-            
-            table.insert(eggsToHatch, egg)
         end
     end
-    
-    if not isAllEggsIsReady then
-        warn("Some eggs are not ready to hatch. Aborting hatch process.")
-        return
-    end
-    
+
+    local waitTime = math.max(2, maxTimeToHatch)
+    wait(waitTime)
+
     if #eggsToHatch == 0 then
         print("No eggs are ready to hatch.")
         return
@@ -543,167 +532,104 @@ function PetUtils:HatchEgg()
     local weightThresholdSpecialHatching = Window:GetConfigValue("WeightThresholdSpecialHatching") or math.huge
     local boostBeforeHatch = Window:GetConfigValue("AutoBoostBeforeHatch") or false
 
-    print("HatchPetTeam:", hatchPetTeam)
-    print("SpecialHatchPetTeam:", specialHatchPetTeam)
-    print("SpecialHatchPets:", specialHatchingPets and table.concat(specialHatchingPets, ", ") or "None")
-    print("WeightThresholdSpecialHatching:", weightThresholdSpecialHatching or "None")
-
     if hatchPetTeam then
-        print("Changing to Hatch Pet Team:", hatchPetTeam)
         self:ChangeToTeamPets(hatchPetTeam)
-
-        wait(2) -- Wait 2 seconds to ensure pets are equipped
-        
+        wait(2)
         if boostBeforeHatch then
-            print("Auto boosting pets before hatching...")
             self:BoostAllActivePets()
-        else
-            print("Auto boost before hatching is disabled.")
         end
     end
-    
+
     local specialHatchingEgg = {}
-    
     for _, egg in pairs(eggsToHatch) do
         local eggUUID = egg:GetAttribute("OBJECT_UUID")
         local eggData = self:GetPlacedEggDetail(eggUUID)
         local baseWeight = eggData and eggData.BaseWeight or 1
         local petName = eggData and eggData.Type or "Unknown"
 
-        if #specialHatchingPets > 0 then
-            local isSpecialPet = false
-
-            for _, specialPet in ipairs(specialHatchingPets) do
-                if petName == specialPet then
-                    table.insert(specialHatchingEgg, egg)
-                    isSpecialPet = true
-                    break
-                end
-            end
-            
-            if isSpecialPet then
-                print("Special hatching for pet:", petName)
-                continue
+        local isSpecialPet = false
+        for _, specialPet in ipairs(specialHatchingPets) do
+            if petName == specialPet then
+                table.insert(specialHatchingEgg, egg)
+                isSpecialPet = true
+                break
             end
         end
 
-        if baseWeight > weightThresholdSpecialHatching then
-            print("Skipping egg due to weight limit:", petName, "Weight:", baseWeight)
-            table.insert(specialHatchingEgg, egg)
-            continue
+        if not isSpecialPet then
+            if baseWeight > weightThresholdSpecialHatching then
+                table.insert(specialHatchingEgg, egg)
+            else
+                GameServices.GameEvents.PetEggService:FireServer("HatchPet", egg)
+            end
         end
-        
-        print("Hatching egg:", eggName, "Pet:", petName, "Weight:", baseWeight)
-
-        GameServices.GameEvents.PetEggService:FireServer(
-                "HatchPet",
-                egg
-        )
     end
 
-
-    if #specialHatchingEgg <= 0 then
-        print("No special eggs to hatch.")
-        return
-    end
-
-    if specialHatchPetTeam then
-        print("Changing to Special Hatch Pet Team:", specialHatchPetTeam)
+    if specialHatchPetTeam and #specialHatchingEgg > 0 then
         self:ChangeToTeamPets(specialHatchPetTeam)
-        wait(2) -- Wait 2 seconds to ensure pets are equipped
+        wait(2)
     end
 
     print("Hatching special eggs separately to avoid server spam.")
-    
     for _, egg in pairs(specialHatchingEgg) do
         local eggUUID = egg:GetAttribute("OBJECT_UUID")
         local eggData = self:GetPlacedEggDetail(eggUUID)
         local baseWeight = eggData and eggData.BaseWeight or 1
         local petName = eggData and eggData.Type or "Unknown"
         print("Hatching special Pet:", petName, "Weight:", baseWeight)
-        
-        GameServices.GameEvents.PetEggService:FireServer(
-                "HatchPet",
-                egg
-        )
-        wait(2) -- Wait 2 seconds between each special egg hatch
+        GameServices.GameEvents.PetEggService:FireServer("HatchPet", egg)
     end
 
-    wait(2) -- Wait 2 seconds to ensure all hatches are processed
-    
     local isAutoSellAfterHatch = Window:GetConfigValue("AutoSellPetsAfterHatching") or false
     local corePetTeam = Window:GetConfigValue("CorePetTeam") or nil
-    
-    if not isAutoSellAfterHatch then
+
+    if isAutoSellAfterHatch then
+        wait(10)
         self:SellPet()
+    elseif corePetTeam then
+        self:ChangeToTeamPets(corePetTeam)
     end
-    
-    self:ChangeToTeamPets(corePetTeam)
+
     self:PlaceEgg()
 end
 
-function PetUtils:PlaceEgg(position)
+function PetUtils:PlaceEgg()
     local eggName = Window:GetConfigValue("EggPlacing") or ""
     local maxEggs = Window:GetConfigValue("MaxPlaceEggs") or 0
     
     if eggName == "" then
-        print("No egg selected for placing.")
         return
     end
     
     local totalPlacedEggs = #self:GetAllPlacedEggs()
     local availableSlots = maxEggs - totalPlacedEggs
     
-    if availableSlots <= 0 then
-        print("You have reached the maximum number of placed eggs:", maxEggs)
+    if availableSlots < 1 then
         return
     end
 
-    print("Placing egg:", eggName)
     
     local eggOwnedName = self:FindEggOwnedEgg(eggName)
 
     if not eggOwnedName then
-        print("You do not own any more eggs of type:", eggName)
         return
     end
 
     PlayerUtils:EquipTool(eggOwnedName)
+    wait(0.5) -- Wait for tool to be equipped
+    
     for i = 1, availableSlots do
-        -- Retry logic for placing egg with more spacing
-        local success = false
-        local maxRetries = 5
-        local retryCount = 0
-        
-        -- Increase spacing between eggs
-        while not success and retryCount < maxRetries do
+        local success = pcall(function()
             local randomPoint = FarmUtils:GetRandomFarmPoint()
-
-            local result, errorMessage = pcall(function()
-                GameServices.GameEvents.PetEggService:FireServer(
-                    "CreateEgg",
-                    randomPoint
-                )
-            end)
-            
-            if result then
-                success = true
-                print("✅ Placed egg at:", randomPoint)
-                PlayerUtils:TeleportToPosition(randomPoint) -- Teleport player above the placed egg
-            else
-                warn("Error placing egg:", errorMessage)
-                retryCount = retryCount + 1
-                warn("Failed to place egg, retry", retryCount, "/", maxRetries)
-                if retryCount < maxRetries then
-                    wait(1) -- Wait before retry
-                end
+            if randomPoint then
+                GameServices.GameEvents.PetEggService:FireServer("CreateEgg", randomPoint)
             end
-        end
+        end)
         
         if not success then
-            warn("Failed to place egg after", maxRetries, "attempts at position:", randomPoint)
+            warn("Failed to place egg", i)
         end
-
+        
         wait(0.5)
     end
 

@@ -172,6 +172,10 @@ function UIPet:CreateEggsSection(petTab)
         Flag = "MaxPlaceEggs",
     })
 
+    accordionEggs:AddButton("Place Selected Egg", function()
+        PetUtils:PlaceEgg()    
+    end)
+
     accordionEggs:AddSeparator()
 
     accordionEggs:AddLabel("Team for Hatching Eggs")
@@ -216,7 +220,7 @@ function UIPet:CreateEggsSection(petTab)
         Name = "Select Special Pet",
         Options = {"Loading..."},
         Placeholder = "Select Special Pet...",
-        MultiSelect = false,
+        MultiSelect = true,
         Flag = "SpecialHatchingPet",
         OnInit = function(currentOptions, updateOptions, selectBoxAPI)
             local specialPets = PetUtils:GetPetRegistry()
